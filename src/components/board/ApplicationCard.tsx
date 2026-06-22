@@ -17,7 +17,6 @@ const STATUS_COLORS: Record<ApplicationStatus, string> = {
 
 export default function ApplicationCard({ application, onEdit, onDelete, onArchive }: Props) {
   const hasReminder = !!application.reminder_date
-  const reminderSent = application.reminder_sent_day_of || application.reminder_sent_day_before
 
   return (
     <div className="bg-white border-2 border-dark shadow-neo-sm p-3 cursor-grab active:cursor-grabbing group">
@@ -80,11 +79,23 @@ export default function ApplicationCard({ application, onEdit, onDelete, onArchi
           {application.status}
         </span>
 
-        {hasReminder && (
-          <span className={`badge ${reminderSent ? 'bg-gray-200' : 'bg-primary'}`} title="Reminder set">
-            🔔 {application.reminder_date}
-          </span>
-        )}
+        {hasReminder && (() => {
+          const today = new Date().toISOString().split('T')[0]
+          const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0]
+          const rd = application.reminder_date
+          const isToday = rd === today
+          const isTomorrow = rd === tomorrow
+          return (
+            <span
+              className={`badge ${
+                isToday ? 'bg-rejected' : isTomorrow ? 'bg-interview' : 'bg-primary'
+              }`}
+              title={`Reminder: ${rd}`}
+            >
+              ⏰ {isToday ? 'TODAY' : isTomorrow ? 'TOMORROW' : rd}
+            </span>
+          )
+        })()}
 
         {application.applied_date && (
           <span className="badge bg-white" title="Applied date">

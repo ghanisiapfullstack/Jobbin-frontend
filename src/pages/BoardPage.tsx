@@ -17,6 +17,7 @@ import type { Application, ApplicationStatus } from '../api/applications'
 import KanbanColumn from '../components/board/KanbanColumn'
 import ApplicationCard from '../components/board/ApplicationCard'
 import ApplicationModal from '../components/board/ApplicationModal'
+import { ColumnSkeleton } from '../components/board/Skeleton'
 
 const COLUMNS: { status: ApplicationStatus; label: string; color: string; collapsible?: boolean }[] = [
   { status: 'wishlist',  label: 'Wishlist',   color: 'bg-wishlist' },
@@ -141,9 +142,18 @@ export default function BoardPage() {
 
   if (loading && applications.length === 0) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="w-10 h-10 border-4 border-dark border-t-transparent rounded-full animate-spin" />
-      </div>
+      <>
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <div className="h-7 w-32 bg-dark/10 animate-pulse mb-1" />
+            <div className="h-4 w-24 bg-dark/10 animate-pulse" />
+          </div>
+          <div className="h-9 w-36 bg-dark/10 animate-pulse" />
+        </div>
+        <div className="flex gap-4 overflow-x-auto pb-6">
+          {[1,2,3,4,5].map((i) => <ColumnSkeleton key={i} />)}
+        </div>
+      </>
     )
   }
 
@@ -173,7 +183,7 @@ export default function BoardPage() {
         onDragOver={handleDragOver}
         onDragEnd={handleDragEnd}
       >
-        <div className="flex gap-4 overflow-x-auto pb-6">
+        <div className="flex gap-4 overflow-x-auto pb-6 -mx-4 px-4 md:mx-0 md:px-0">
           {COLUMNS.map((col) => (
             <KanbanColumn
               key={col.status}
