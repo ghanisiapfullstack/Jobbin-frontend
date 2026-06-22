@@ -24,7 +24,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <Toaster
-        position="top-right"
+        position="bottom-right"
         toastOptions={{
           style: {
             border: '2px solid #1a1a1a',

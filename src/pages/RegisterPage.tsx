@@ -14,6 +14,7 @@ export default function RegisterPage() {
   const [form, setForm] = useState({ name: '', email: '', password: '' })
   const [errors, setErrors] = useState<FormErrors>({})
   const [loading, setLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }))
@@ -22,9 +23,20 @@ export default function RegisterPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    // Client-side validation
+    const newErrors: FormErrors = {}
+    if (!form.name.trim()) newErrors.name = 'Full name wajib diisi'
+    if (!form.email.trim()) newErrors.email = 'Email wajib diisi'
+    if (!form.password) newErrors.password = 'Password wajib diisi'
+    else if (form.password.length < 6) newErrors.password = 'Password minimal 6 karakter'
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors)
+      return
+    }
+
     setLoading(true)
     setErrors({})
-
     try {
       await authApi.register(form)
       toast.success('Registrasi berhasil! Cek email untuk verifikasi.')
@@ -40,6 +52,9 @@ export default function RegisterPage() {
       setLoading(false)
     }
   }
+
+  const passwordLength = form.password.length
+  const passwordStrength = passwordLength === 0 ? null : passwordLength < 6 ? 'weak' : passwordLength < 10 ? 'medium' : 'strong'
 
   return (
     <div className="min-h-screen bg-primary flex items-center justify-center px-4 py-8 sm:py-12">
@@ -92,16 +107,54 @@ export default function RegisterPage() {
             {/* Password */}
             <div>
               <label htmlFor="password" className="label-neo">Password</label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                autoComplete="new-password"
-                placeholder="Min. 6 characters"
-                value={form.password}
-                onChange={handleChange}
-                className={`input-neo ${errors.password ? 'border-red-500' : ''}`}
-              />
+              <div className="relative">
+                <input
+                  id="password"
+                  name="password"
+                  type={showPassword ? 'text' : 'password'}
+                  autoComplete="new-password"
+                  placeholder="Min. 6 characters"
+                  value={form.password}
+                  onChange={handleChange}
+                  className={`input-neo pr-12 ${errors.password ? 'border-red-500' : ''}`}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-neo hover:text-dark transition-colors"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? '🙈' : '👁️'}
+                </button>
+              </div>
+
+              {/* Password strength indicator */}
+              {passwordLength > 0 && (
+                <div className="mt-1.5">
+                  <div className="flex gap-1 mb-1">
+                    {[1, 2, 3].map((i) => (
+                      <div
+                        key={i}
+                        className={`h-1.5 flex-1 border border-dark/20 ${
+                          passwordStrength === 'weak' && i === 1 ? 'bg-rejected' :
+                          passwordStrength === 'medium' && i <= 2 ? 'bg-interview' :
+                          passwordStrength === 'strong' ? 'bg-offer' :
+                          'bg-gray-200'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                  <p className={`text-xs font-semibold ${
+                    passwordStrength === 'weak' ? 'text-red-500' :
+                    passwordStrength === 'medium' ? 'text-yellow-600' :
+                    'text-green-600'
+                  }`}>
+                    {passwordStrength === 'weak' ? `Too short — ${6 - passwordLength} more character${6 - passwordLength > 1 ? 's' : ''} needed` :
+                     passwordStrength === 'medium' ? 'Good password' :
+                     'Strong password ✓'}
+                  </p>
+                </div>
+              )}
               {errors.password && <p className="error-msg">{errors.password}</p>}
             </div>
 

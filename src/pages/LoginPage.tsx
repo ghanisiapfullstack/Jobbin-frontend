@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { authApi } from '../api/auth'
 import { useAuthStore } from '../store/authStore'
+import { useRemindersStore } from '../store/remindersStore'
 import toast from 'react-hot-toast'
 
 interface FormErrors {
@@ -15,6 +16,7 @@ export default function LoginPage() {
   const [form, setForm] = useState({ email: '', password: '' })
   const [errors, setErrors] = useState<FormErrors>({})
   const [loading, setLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }))
@@ -23,6 +25,16 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    // Client-side validation
+    const newErrors: FormErrors = {}
+    if (!form.email.trim()) newErrors.email = 'Email wajib diisi'
+    if (!form.password) newErrors.password = 'Password wajib diisi'
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors)
+      return
+    }
+
     setLoading(true)
     setErrors({})
 
@@ -31,6 +43,37 @@ export default function LoginPage() {
       const { token, user } = res.data.data
       setAuth(token, user)
       toast.success(`Welcome back, ${user.name}!`)
+
+      // Fetch reminders dan tampilkan popup kalau ada
+      try {
+        const remindersStore = useRemindersStore.getState()
+        await remindersStore.fetchReminders()
+        const { today, tomorrow } = useRemindersStore.getState()
+        const total = today.length + tomorrow.length
+        if (total > 0) {
+          setTimeout(() => {
+            toast(
+              `⏰ You have ${total} reminder${total > 1 ? 's' : ''} ${
+                today.length > 0 ? 'today' : 'tomorrow'
+              }!`,
+              {
+                duration: 5000,
+                icon: '🔔',
+                style: {
+                  border: '2px solid #1a1a1a',
+                  boxShadow: '4px 4px 0px #1a1a1a',
+                  fontFamily: 'Space Grotesk, sans-serif',
+                  fontWeight: 600,
+                  background: '#FFD600',
+                },
+              }
+            )
+          }, 1000)
+        }
+      } catch {
+        // silent fail — reminder tidak kritis
+      }
+
       navigate('/board')
     } catch (err: any) {
       const data = err.response?.data
@@ -39,7 +82,6 @@ export default function LoginPage() {
       if (status === 422 && data?.errors) {
         setErrors(data.errors)
       } else if (status === 403) {
-        // Email belum diverifikasi
         toast.error('Please verify your email first.')
         navigate(`/verify-email?email=${encodeURIComponent(form.email)}`)
       } else if (status === 429) {
@@ -87,16 +129,26 @@ export default function LoginPage() {
             {/* Password */}
             <div>
               <label htmlFor="password" className="label-neo">Password</label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                autoComplete="current-password"
-                placeholder="Your password"
-                value={form.password}
-                onChange={handleChange}
-                className={`input-neo ${errors.password ? 'border-red-500' : ''}`}
-              />
+              <div className="relative">
+                <input
+                  id="password"
+                  name="password"
+                  type={showPassword ? 'text' : 'password'}
+                  autoComplete="current-password"
+                  placeholder="Your password"
+                  value={form.password}
+                  onChange={handleChange}
+                  className={`input-neo pr-12 ${errors.password ? 'border-red-500' : ''}`}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-neo hover:text-dark transition-colors"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? '🙈' : '👁️'}
+                </button>
+              </div>
               {errors.password && <p className="error-msg">{errors.password}</p>}
             </div>
 
