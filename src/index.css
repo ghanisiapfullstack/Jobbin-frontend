@@ -1,0 +1,98 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800;900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    @apply bg-bg-neo font-sans text-dark;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-bold;
+  }
+}
+
+@layer components {
+  /* Button variants */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 font-bold border-2 border-dark shadow-neo transition-all duration-100 cursor-pointer select-none;
+  }
+
+  .btn:active {
+    @apply translate-x-1 translate-y-1 shadow-none;
+  }
+
+  .btn-primary {
+    @apply btn bg-primary text-dark px-5 py-2.5 text-sm;
+  }
+
+  .btn-primary:hover {
+    @apply bg-primary-hover;
+  }
+
+  .btn-dark {
+    @apply btn bg-dark text-white px-5 py-2.5 text-sm;
+  }
+
+  .btn-dark:hover {
+    @apply bg-dark/90;
+  }
+
+  .btn-outline {
+    @apply btn bg-white text-dark px-5 py-2.5 text-sm;
+  }
+
+  .btn-outline:hover {
+    @apply bg-gray-50;
+  }
+
+  .btn-danger {
+    @apply btn bg-rejected text-dark px-5 py-2.5 text-sm;
+  }
+
+  /* Input */
+  .input-neo {
+    @apply w-full border-2 border-dark px-4 py-2.5 text-sm font-medium bg-white shadow-neo-sm outline-none transition-all duration-100;
+  }
+
+  .input-neo:focus {
+    @apply shadow-neo translate-x-[-1px] translate-y-[-1px];
+  }
+
+  .input-neo::placeholder {
+    @apply text-gray-400 font-normal;
+  }
+
+  /* Card */
+  .card-neo {
+    @apply bg-white border-2 border-dark shadow-neo-lg p-6;
+  }
+
+  /* Label */
+  .label-neo {
+    @apply block text-sm font-bold text-dark mb-1.5;
+  }
+
+  /* Badge / Status pill */
+  .badge {
+    @apply inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 border-2 border-dark;
+  }
+
+  .badge-wishlist  { @apply bg-wishlist; }
+  .badge-applied   { @apply bg-applied; }
+  .badge-interview { @apply bg-interview; }
+  .badge-offer     { @apply bg-offer; }
+  .badge-rejected  { @apply bg-rejected; }
+
+  /* Error message */
+  .error-msg {
+    @apply text-xs font-semibold text-red-600 mt-1;
+  }
+}
