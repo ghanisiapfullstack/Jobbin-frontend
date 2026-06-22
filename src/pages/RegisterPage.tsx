@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { authApi } from '../api/auth'
 import toast from 'react-hot-toast'
+import PasswordToggle from '../components/ui/PasswordToggle'
 
 interface FormErrors {
   name?: string
@@ -118,14 +119,7 @@ export default function RegisterPage() {
                   onChange={handleChange}
                   className={`input-neo pr-12 ${errors.password ? 'border-red-500' : ''}`}
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-neo hover:text-dark transition-colors"
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
-                >
-                  {showPassword ? '🙈' : '👁️'}
-                </button>
+                <PasswordToggle show={showPassword} onClick={() => setShowPassword(!showPassword)} />
               </div>
 
               {/* Password strength indicator */}
