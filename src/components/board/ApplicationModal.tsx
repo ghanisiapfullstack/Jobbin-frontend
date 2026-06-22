@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { Application, ApplicationPayload, ApplicationStatus } from '../../api/applications'
+import { toInputDate } from '../../utils/date'
 
 interface Props {
   open: boolean
@@ -32,8 +33,8 @@ export default function ApplicationModal({ open, onClose, onSubmit, initialData,
         url: initialData.url || '',
         status: initialData.status,
         notes: initialData.notes || '',
-        applied_date: initialData.applied_date || '',
-        reminder_date: initialData.reminder_date || '',
+        applied_date: toInputDate(initialData.applied_date),
+        reminder_date: toInputDate(initialData.reminder_date),
       })
     } else {
       setForm({

@@ -1,4 +1,5 @@
 import type { Application, ApplicationStatus } from '../../api/applications'
+import { formatDate } from '../../utils/date'
 
 interface Props {
   application: Application
@@ -82,7 +83,7 @@ export default function ApplicationCard({ application, onEdit, onDelete, onArchi
         {hasReminder && (() => {
           const today = new Date().toISOString().split('T')[0]
           const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0]
-          const rd = application.reminder_date
+          const rd = application.reminder_date?.split('T')[0] || application.reminder_date
           const isToday = rd === today
           const isTomorrow = rd === tomorrow
           return (
@@ -90,16 +91,16 @@ export default function ApplicationCard({ application, onEdit, onDelete, onArchi
               className={`badge ${
                 isToday ? 'bg-rejected' : isTomorrow ? 'bg-interview' : 'bg-primary'
               }`}
-              title={`Reminder: ${rd}`}
+              title={`Reminder: ${formatDate(application.reminder_date)}`}
             >
-              ⏰ {isToday ? 'TODAY' : isTomorrow ? 'TOMORROW' : rd}
+              ⏰ {isToday ? 'TODAY' : isTomorrow ? 'TOMORROW' : formatDate(application.reminder_date)}
             </span>
           )
         })()}
 
         {application.applied_date && (
           <span className="badge bg-white" title="Applied date">
-            📅 {application.applied_date}
+            📅 {formatDate(application.applied_date)}
           </span>
         )}
       </div>
