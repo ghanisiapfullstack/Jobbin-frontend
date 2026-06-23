@@ -4,6 +4,7 @@ import { Toaster } from 'react-hot-toast'
 import { ProtectedRoute, GuestRoute } from './components/RouteGuard'
 import AppLayout from './components/AppLayout'
 import SplashScreen from './pages/SplashScreen'
+import LandingPage from './pages/LandingPage'
 import RegisterPage from './pages/RegisterPage'
 import VerifyEmailPage from './pages/VerifyEmailPage'
 import LoginPage from './pages/LoginPage'
@@ -35,6 +36,9 @@ export default function App() {
         }}
       />
       <Routes>
+        {/* Public */}
+        <Route path="/" element={<LandingPage />} />
+
         {/* Guest only */}
         <Route element={<GuestRoute />}>
           <Route path="/register" element={<RegisterPage />} />
@@ -52,8 +56,7 @@ export default function App() {
         </Route>
 
         {/* Default */}
-        <Route path="/" element={<Navigate to="/board" replace />} />
-        <Route path="*" element={<Navigate to="/board" replace />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
   )
