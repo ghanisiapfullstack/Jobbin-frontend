@@ -1,6 +1,7 @@
-import { Link } from 'react-router-dom'
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { motion, type Variants } from 'framer-motion'
-import { LayoutDashboard, BellRing, Archive, ArrowRight, Check, MoveRight } from 'lucide-react'
+import { LayoutDashboard, BellRing, Archive, ArrowRight, Check, MoveRight, Loader2 } from 'lucide-react'
 
 // ── Animation variants ──────────────────────────────────────
 const fadeUp: Variants = {
@@ -91,6 +92,15 @@ const STEPS = [
 
 // ── Component ───────────────────────────────────────────────
 export default function LandingPage() {
+  const navigate = useNavigate()
+  const [loadingBtn, setLoadingBtn] = useState<string | null>(null)
+
+  const handleNav = (to: string, key: string) => {
+    setLoadingBtn(key)
+    setTimeout(() => {
+      navigate(to)
+    }, 600)
+  }
   return (
     <div className="min-h-screen bg-primary" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
 
@@ -109,12 +119,20 @@ export default function LandingPage() {
             <span className="text-lg font-black text-dark tracking-tight">JOBBIN</span>
           </div>
           <div className="flex items-center gap-2">
-            <Link to="/login" className="btn-outline text-sm px-4 py-1.5">
-              Sign in
-            </Link>
-            <Link to="/register" className="btn-dark text-sm px-4 py-1.5 flex items-center gap-1.5">
-              Get started <ArrowRight size={14} />
-            </Link>
+            <button
+              onClick={() => handleNav('/login', 'nav-login')}
+              disabled={!!loadingBtn}
+              className="btn-outline text-sm px-4 py-1.5 flex items-center gap-1.5 disabled:opacity-60"
+            >
+              {loadingBtn === 'nav-login' ? <Loader2 size={14} className="animate-spin" /> : 'Sign in'}
+            </button>
+            <button
+              onClick={() => handleNav('/register', 'nav-register')}
+              disabled={!!loadingBtn}
+              className="btn-dark text-sm px-4 py-1.5 flex items-center gap-1.5 disabled:opacity-60"
+            >
+              {loadingBtn === 'nav-register' ? <Loader2 size={14} className="animate-spin" /> : <><span>Get started</span><ArrowRight size={14} /></>}
+            </button>
           </div>
         </div>
       </motion.header>
@@ -166,12 +184,24 @@ export default function LandingPage() {
             custom={3}
             className="flex flex-wrap gap-3"
           >
-            <Link to="/register" className="btn-dark text-base px-6 py-3 flex items-center gap-2">
-              Start for free <ArrowRight size={16} />
-            </Link>
-            <Link to="/login" className="btn-outline text-base px-6 py-3">
-              Sign in
-            </Link>
+            <button
+              onClick={() => handleNav('/register', 'hero-register')}
+              disabled={!!loadingBtn}
+              className="btn-dark text-base px-6 py-3 flex items-center gap-2 disabled:opacity-60"
+            >
+              {loadingBtn === 'hero-register'
+                ? <><Loader2 size={16} className="animate-spin" /> Loading...</>
+                : <>Start for free <ArrowRight size={16} /></>}
+            </button>
+            <button
+              onClick={() => handleNav('/login', 'hero-login')}
+              disabled={!!loadingBtn}
+              className="btn-outline text-base px-6 py-3 flex items-center gap-2 disabled:opacity-60"
+            >
+              {loadingBtn === 'hero-login'
+                ? <><Loader2 size={16} className="animate-spin" /> Loading...</>
+                : 'Sign in'}
+            </button>
           </motion.div>
 
           {/* Social proof */}
@@ -354,9 +384,15 @@ export default function LandingPage() {
             whileTap={{ scale: 0.97 }}
             className="inline-block"
           >
-            <Link to="/register" className="btn-dark text-lg px-8 py-4 flex items-center gap-2 inline-flex">
-              Start for free <MoveRight size={18} />
-            </Link>
+            <button
+              onClick={() => handleNav('/register', 'cta-register')}
+              disabled={!!loadingBtn}
+              className="btn-dark text-lg px-8 py-4 flex items-center gap-2 disabled:opacity-60"
+            >
+              {loadingBtn === 'cta-register'
+                ? <><Loader2 size={18} className="animate-spin" /> Loading...</>
+                : <>Start for free <MoveRight size={18} /></>}
+            </button>
           </motion.div>
         </motion.div>
       </section>
@@ -374,12 +410,18 @@ export default function LandingPage() {
             © {new Date().getFullYear()} Jobbin. Built with focus and determination.
           </p>
           <div className="flex gap-4">
-            <Link to="/login" className="text-xs text-primary/50 font-bold hover:text-primary transition-colors">
+            <button
+              onClick={() => handleNav('/login', 'footer-login')}
+              className="text-xs text-primary/50 font-bold hover:text-primary transition-colors"
+            >
               Sign in
-            </Link>
-            <Link to="/register" className="text-xs text-primary/50 font-bold hover:text-primary transition-colors">
+            </button>
+            <button
+              onClick={() => handleNav('/register', 'footer-register')}
+              className="text-xs text-primary/50 font-bold hover:text-primary transition-colors"
+            >
               Register
-            </Link>
+            </button>
           </div>
         </div>
       </footer>
