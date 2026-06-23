@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
+import { AnimatePresence, motion } from 'framer-motion'
 import { ProtectedRoute, GuestRoute } from './components/RouteGuard'
 import AppLayout from './components/AppLayout'
 import SplashScreen from './pages/SplashScreen'
@@ -12,6 +13,54 @@ import BoardPage from './pages/BoardPage'
 import ArchivedPage from './pages/ArchivedPage'
 import ProfilePage from './pages/ProfilePage'
 
+// ── Page transition wrapper ─────────────────────────────────
+function PageTransition({ children }: { children: React.ReactNode }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
+      transition={{ duration: 0.25, ease: 'easeInOut' }}
+    >
+      {children}
+    </motion.div>
+  )
+}
+
+// ── Animated routes — perlu useLocation di dalam BrowserRouter ──
+function AnimatedRoutes() {
+  const location = useLocation()
+
+  return (
+    <AnimatePresence mode="wait">
+      <Routes location={location} key={location.pathname}>
+        {/* Public */}
+        <Route path="/" element={<PageTransition><LandingPage /></PageTransition>} />
+
+        {/* Guest only */}
+        <Route element={<GuestRoute />}>
+          <Route path="/register" element={<PageTransition><RegisterPage /></PageTransition>} />
+          <Route path="/login" element={<PageTransition><LoginPage /></PageTransition>} />
+          <Route path="/verify-email" element={<PageTransition><VerifyEmailPage /></PageTransition>} />
+        </Route>
+
+        {/* Protected — dengan layout navbar */}
+        <Route element={<ProtectedRoute />}>
+          <Route element={<AppLayout />}>
+            <Route path="/board" element={<PageTransition><BoardPage /></PageTransition>} />
+            <Route path="/archived" element={<PageTransition><ArchivedPage /></PageTransition>} />
+            <Route path="/profile" element={<PageTransition><ProfilePage /></PageTransition>} />
+          </Route>
+        </Route>
+
+        {/* Default */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </AnimatePresence>
+  )
+}
+
+// ── Main App ────────────────────────────────────────────────
 export default function App() {
   const [loading, setLoading] = useState(true)
 
@@ -35,29 +84,7 @@ export default function App() {
           },
         }}
       />
-      <Routes>
-        {/* Public */}
-        <Route path="/" element={<LandingPage />} />
-
-        {/* Guest only */}
-        <Route element={<GuestRoute />}>
-          <Route path="/register" element={<RegisterPage />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/verify-email" element={<VerifyEmailPage />} />
-        </Route>
-
-        {/* Protected — dengan layout navbar */}
-        <Route element={<ProtectedRoute />}>
-          <Route element={<AppLayout />}>
-            <Route path="/board" element={<BoardPage />} />
-            <Route path="/archived" element={<ArchivedPage />} />
-            <Route path="/profile" element={<ProfilePage />} />
-          </Route>
-        </Route>
-
-        {/* Default */}
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+      <AnimatedRoutes />
     </BrowserRouter>
   )
 }
