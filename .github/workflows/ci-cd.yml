@@ -1,4 +1,4 @@
-name: Frontend CI/CD
+name: Frontend CI
 
 on:
   push:
@@ -7,11 +7,9 @@ on:
     branches: [main]
 
 jobs:
-  # ─── CI: Build + Type Check ─────────────────────────────────
   ci:
     name: Build & Type Check
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
 
@@ -30,19 +28,4 @@ jobs:
       - name: Build
         run: npm run build
         env:
-          VITE_API_URL: https://jobbin-backend.onrender.com/api/v1
-
-  # ─── CD: Deploy ke Render (hanya saat push ke main) ─────────
-  deploy:
-    name: Deploy to Render
-    needs: ci
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-
-    steps:
-      - name: Trigger Render deploy
-        run: |
-          curl -s -X POST "${{ secrets.RENDER_FRONTEND_DEPLOY_HOOK }}" \
-            -H "Content-Type: application/json" \
-            --fail
-          echo "Deploy triggered successfully"
+          VITE_API_URL: https://api.jobbin.site/api/v1
