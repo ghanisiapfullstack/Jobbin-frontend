@@ -5,6 +5,7 @@ import { useAuthStore } from '../store/authStore'
 import { useRemindersStore } from '../store/remindersStore'
 import toast from 'react-hot-toast'
 import PasswordToggle from '../components/ui/PasswordToggle'
+import GoogleButton from '../components/ui/GoogleButton'
 
 interface FormErrors {
   email?: string
@@ -154,6 +155,17 @@ export default function LoginPage() {
               {loading ? 'Signing in...' : 'Sign in →'}
             </button>
           </form>
+
+          {/* Divider */}
+          <div className="flex items-center gap-3 my-4">
+            <div className="flex-1 h-0.5 bg-dark/10" />
+            <span className="text-xs font-bold text-dark/40">OR</span>
+            <div className="flex-1 h-0.5 bg-dark/10" />
+          </div>
+
+          {/* Google Sign In */}
+          <GoogleButton />
+
 
           <p className="text-sm text-center text-gray-neo mt-6">
             Don't have an account?{' '}
