@@ -4,6 +4,8 @@ import { authApi } from '../api/auth'
 import toast from 'react-hot-toast'
 import PasswordToggle from '../components/ui/PasswordToggle'
 import GoogleButton from '../components/ui/GoogleButton'
+import JobbinLogo from '../components/ui/JobbinLogo'
+import { getApiErrorData } from '../utils/apiError'
 
 interface FormErrors {
   name?: string
@@ -28,10 +30,10 @@ export default function RegisterPage() {
 
     // Client-side validation
     const newErrors: FormErrors = {}
-    if (!form.name.trim()) newErrors.name = 'Full name wajib diisi'
-    if (!form.email.trim()) newErrors.email = 'Email wajib diisi'
-    if (!form.password) newErrors.password = 'Password wajib diisi'
-    else if (form.password.length < 6) newErrors.password = 'Password minimal 6 karakter'
+    if (!form.name.trim()) newErrors.name = 'Enter your full name.'
+    if (!form.email.trim()) newErrors.email = 'Enter your email address.'
+    if (!form.password) newErrors.password = 'Create a password.'
+    else if (form.password.length < 6) newErrors.password = 'Use at least 6 characters.'
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors)
       return
@@ -41,14 +43,14 @@ export default function RegisterPage() {
     setErrors({})
     try {
       await authApi.register(form)
-      toast.success('Registrasi berhasil! Cek email untuk verifikasi.')
+      toast.success('Account created! Check your email to verify it.')
       navigate(`/verify-email?email=${encodeURIComponent(form.email)}`)
-    } catch (err: any) {
-      const data = err.response?.data
-      if (data?.errors) {
+    } catch (error: unknown) {
+      const data = getApiErrorData(error)
+      if (data.errors) {
         setErrors(data.errors)
       } else {
-        toast.error(data?.message || 'Terjadi kesalahan. Coba lagi.')
+        toast.error(data.message || 'We could not create your account. Try again.')
       }
     } finally {
       setLoading(false)
@@ -62,12 +64,7 @@ export default function RegisterPage() {
     <div className="min-h-screen bg-primary flex items-center justify-center px-4 py-8 sm:py-12">
       <div className="w-full max-w-md">
         {/* Logo */}
-        <div className="flex items-center gap-3 mb-8">
-          <div className="w-10 h-10 bg-dark border-2 border-dark flex items-center justify-center">
-            <span className="text-primary text-xl font-black">J</span>
-          </div>
-          <h1 className="text-2xl font-black text-dark">JOBBIN</h1>
-        </div>
+        <Link to="/" className="mb-8 inline-flex" aria-label="Jobbin home"><JobbinLogo /></Link>
 
         <div className="card-neo">
           <h2 className="text-2xl font-black text-dark mb-1">Create account</h2>
