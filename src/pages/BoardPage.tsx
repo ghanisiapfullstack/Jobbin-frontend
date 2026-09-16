@@ -1,63 +1,105 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import {
   DndContext,
   DragOverlay,
-  closestCorners,
+  KeyboardSensor,
   PointerSensor,
+  closestCorners,
   useSensor,
   useSensors,
-  type DragStartEvent,
   type DragEndEvent,
-  type DragOverEvent,
+  type DragStartEvent,
 } from '@dnd-kit/core'
-import { arrayMove } from '@dnd-kit/sortable'
+import { arrayMove, sortableKeyboardCoordinates } from '@dnd-kit/sortable'
+import { AlertTriangle, Plus, RefreshCw } from 'lucide-react'
 import toast from 'react-hot-toast'
-import { useApplicationsStore } from '../store/applicationsStore'
-import type { Application, ApplicationStatus } from '../api/applications'
-import KanbanColumn from '../components/board/KanbanColumn'
+import { toApplicationPayload, type Application, type ApplicationStatus } from '../api/applications'
 import ApplicationCard from '../components/board/ApplicationCard'
 import ApplicationModal from '../components/board/ApplicationModal'
+import InterviewReminderPrompt from '../components/board/InterviewReminderPrompt'
+import KanbanColumn from '../components/board/KanbanColumn'
 import { ColumnSkeleton } from '../components/board/Skeleton'
+import { useMediaQuery } from '../hooks/useMediaQuery'
+import { useApplicationsStore } from '../store/applicationsStore'
+import { useRemindersStore } from '../store/remindersStore'
+import { getApiErrorData } from '../utils/apiError'
+import ConfirmDialog from '../components/ui/ConfirmDialog'
 
 const COLUMNS: { status: ApplicationStatus; label: string; color: string; collapsible?: boolean }[] = [
-  { status: 'wishlist',  label: 'Wishlist',   color: 'bg-wishlist' },
-  { status: 'applied',   label: 'Applied',    color: 'bg-applied' },
-  { status: 'interview', label: 'Interview',  color: 'bg-interview' },
-  { status: 'offer',     label: 'Offer',      color: 'bg-offer' },
-  { status: 'rejected',  label: 'Rejected',   color: 'bg-rejected', collapsible: true },
+  { status: 'wishlist', label: 'Wishlist', color: 'bg-wishlist' },
+  { status: 'applied', label: 'Applied', color: 'bg-applied' },
+  { status: 'interview', label: 'Interview', color: 'bg-interview' },
+  { status: 'offer', label: 'Offer', color: 'bg-offer' },
+  { status: 'rejected', label: 'Rejected', color: 'bg-rejected', collapsible: true },
 ]
 
 export default function BoardPage() {
-  const { applications, loading, fetchApplications, addApplication, updateApplication, updatePosition, archiveApplication, deleteApplication } = useApplicationsStore()
+  const {
+    applications,
+    loading,
+    error,
+    fetchApplications,
+    addApplication,
+    updateApplication,
+    updatePosition,
+    archiveApplication,
+    deleteApplication,
+  } = useApplicationsStore()
+  const fetchReminders = useRemindersStore((state) => state.fetchReminders)
+  const isDesktop = useMediaQuery('(min-width: 768px)')
 
   const [activeApp, setActiveApp] = useState<Application | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
   const [editingApp, setEditingApp] = useState<Application | null>(null)
   const [defaultStatus, setDefaultStatus] = useState<ApplicationStatus>('wishlist')
+  const [mobileStatus, setMobileStatus] = useState<ApplicationStatus>('wishlist')
+  const [reminderApp, setReminderApp] = useState<Application | null>(null)
+  const [reminderSaving, setReminderSaving] = useState(false)
+  const [reminderError, setReminderError] = useState<string | null>(null)
+  const [deletingApp, setDeletingApp] = useState<Application | null>(null)
+  const [deleteBusy, setDeleteBusy] = useState(false)
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   )
 
   useEffect(() => {
-    fetchApplications()
-  }, [])
+    void fetchApplications()
+  }, [fetchApplications])
 
   const getColumnApps = useCallback(
-    (status: ApplicationStatus) =>
-      applications
-        .filter((a) => a.status === status)
-        .sort((a, b) => a.position - b.position),
-    [applications]
+    (status: ApplicationStatus) => applications.filter((application) => application.status === status).sort((a, b) => a.position - b.position),
+    [applications],
   )
 
-  const handleDragStart = (event: DragStartEvent) => {
-    const app = applications.find((a) => a.id === event.active.id)
-    if (app) setActiveApp(app)
+  const openReminder = (application: Application) => {
+    setReminderError(null)
+    setReminderApp(application)
   }
 
-  const handleDragOver = (_event: DragOverEvent) => {
-    // handled in dragEnd
+  const moveApplication = async (application: Application, targetStatus: ApplicationStatus, position?: number) => {
+    if (application.status === targetStatus && position === undefined) return
+
+    const wasInterview = application.status === 'interview'
+    const nextPosition = position ?? getColumnApps(targetStatus).length + 1
+    await updatePosition(application.id, nextPosition, targetStatus)
+    toast.success(`Moved to ${targetStatus}`)
+
+    if (!wasInterview && targetStatus === 'interview' && !application.reminder_date) {
+      openReminder({ ...application, status: targetStatus, position: nextPosition })
+    }
+  }
+
+  const positionBetween = (previous?: Application, next?: Application) => {
+    if (previous && next) return previous.position + (next.position - previous.position) / 2
+    if (previous) return previous.position + 1
+    if (next) return next.position - 1
+    return 1
+  }
+
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveApp(applications.find((application) => application.id === event.active.id) ?? null)
   }
 
   const handleDragEnd = async (event: DragEndEvent) => {
@@ -65,38 +107,37 @@ export default function BoardPage() {
     const { active, over } = event
     if (!over) return
 
-    const activeApp = applications.find((a) => a.id === active.id)
-    if (!activeApp) return
+    const application = applications.find((item) => item.id === active.id)
+    if (!application) return
 
-    // Determine target status
-    let targetStatus: ApplicationStatus = activeApp.status
+    const targetStatus: ApplicationStatus =
+      typeof over.id === 'string' && COLUMNS.some((column) => column.status === over.id)
+        ? over.id as ApplicationStatus
+        : applications.find((item) => item.id === over.id)?.status ?? application.status
 
-    // over.id bisa berupa status string (droppable) atau card id (sortable)
-    if (typeof over.id === 'string' && COLUMNS.some((c) => c.status === over.id)) {
-      targetStatus = over.id as ApplicationStatus
-    } else {
-      const overApp = applications.find((a) => a.id === over.id)
-      if (overApp) targetStatus = overApp.status
-    }
+    try {
+      const columnApps = getColumnApps(targetStatus)
+      if (application.status !== targetStatus) {
+        const targetApps = columnApps.filter((item) => item.id !== application.id)
+        const hoveredIndex = typeof over.id === 'number'
+          ? targetApps.findIndex((item) => item.id === over.id)
+          : -1
+        const targetIndex = hoveredIndex >= 0 ? hoveredIndex : targetApps.length
+        const nextPosition = positionBetween(targetApps[targetIndex - 1], targetApps[targetIndex])
+        await moveApplication(application, targetStatus, nextPosition)
+        return
+      }
 
-    const columnApps = getColumnApps(targetStatus)
-
-    if (activeApp.status === targetStatus) {
-      // Reorder dalam kolom yang sama
-      const oldIndex = columnApps.findIndex((a) => a.id === active.id)
-      const newIndex = columnApps.findIndex((a) => a.id === over.id)
-      if (oldIndex === newIndex) return
+      const oldIndex = columnApps.findIndex((item) => item.id === active.id)
+      const newIndex = columnApps.findIndex((item) => item.id === over.id)
+      if (oldIndex < 0 || newIndex < 0 || oldIndex === newIndex) return
 
       const reordered = arrayMove(columnApps, oldIndex, newIndex)
-      // Assign posisi baru
-      for (let i = 0; i < reordered.length; i++) {
-        await updatePosition(reordered[i].id, i + 1, targetStatus)
-      }
-    } else {
-      // Pindah kolom
-      const newPosition = columnApps.length + 1
-      await updatePosition(activeApp.id, newPosition, targetStatus)
-      toast.success(`Moved to ${targetStatus}`)
+      const movedIndex = reordered.findIndex((item) => item.id === application.id)
+      const nextPosition = positionBetween(reordered[movedIndex - 1], reordered[movedIndex + 1])
+      await updatePosition(application.id, nextPosition, targetStatus)
+    } catch (moveError: unknown) {
+      toast.error(getApiErrorData(moveError).message || 'We could not move this application.')
     }
   }
 
@@ -106,18 +147,21 @@ export default function BoardPage() {
     setModalOpen(true)
   }
 
-  const handleEdit = (app: Application) => {
-    setEditingApp(app)
-    setModalOpen(true)
+  const handleDelete = (id: number) => {
+    setDeletingApp(applications.find((application) => application.id === id) ?? null)
   }
 
-  const handleDelete = async (id: number) => {
-    if (!confirm('Delete this application?')) return
+  const confirmDelete = async () => {
+    if (!deletingApp) return
+    setDeleteBusy(true)
     try {
-      await deleteApplication(id)
+      await deleteApplication(deletingApp.id)
+      setDeletingApp(null)
       toast.success('Application deleted')
-    } catch {
-      toast.error('Failed to delete')
+    } catch (deleteError: unknown) {
+      toast.error(getApiErrorData(deleteError).message || 'We could not delete this application.')
+    } finally {
+      setDeleteBusy(false)
     }
   }
 
@@ -125,103 +169,151 @@ export default function BoardPage() {
     try {
       await archiveApplication(id)
       toast.success('Application archived')
-    } catch {
-      toast.error('Failed to archive')
+    } catch (archiveError: unknown) {
+      toast.error(getApiErrorData(archiveError).message || 'We could not archive this application.')
     }
   }
 
   const handleModalSubmit = async (data: Parameters<typeof addApplication>[0]) => {
     if (editingApp) {
-      await updateApplication(editingApp.id, data)
+      const updated = await updateApplication(editingApp.id, data)
+      if (editingApp.status !== 'interview' && updated.status === 'interview' && !updated.reminder_date) openReminder(updated)
       toast.success('Application updated')
     } else {
-      await addApplication({ ...data, status: defaultStatus })
+      const created = await addApplication({ ...data, status: data.status ?? defaultStatus })
+      if (created.status === 'interview' && !created.reminder_date) openReminder(created)
       toast.success('Application added')
+    }
+  }
+
+  const handleSaveReminder = async (date: string) => {
+    if (!reminderApp) return
+    setReminderSaving(true)
+    setReminderError(null)
+    try {
+      await updateApplication(reminderApp.id, toApplicationPayload(reminderApp, { reminder_date: date }))
+      await fetchReminders()
+      setReminderApp(null)
+      toast.success('Interview reminder set')
+    } catch (saveError: unknown) {
+      setReminderError(getApiErrorData(saveError).message || 'We could not set this reminder.')
+    } finally {
+      setReminderSaving(false)
     }
   }
 
   if (loading && applications.length === 0) {
     return (
-      <>
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <div className="h-7 w-32 bg-dark/10 animate-pulse mb-1" />
-            <div className="h-4 w-24 bg-dark/10 animate-pulse" />
-          </div>
-          <div className="h-9 w-36 bg-dark/10 animate-pulse" />
+      <div aria-label="Loading applications" aria-busy="true">
+        <div className="mb-6 flex items-center justify-between">
+          <div><div className="mb-2 h-7 w-32 animate-pulse bg-dark/10" /><div className="h-4 w-24 animate-pulse bg-dark/10" /></div>
+          <div className="h-11 w-40 animate-pulse bg-dark/10" />
         </div>
-        <div className="flex gap-4 overflow-x-auto pb-6">
-          {[1,2,3,4,5].map((i) => <ColumnSkeleton key={i} />)}
-        </div>
-      </>
+        <div className="flex gap-4 overflow-hidden">{[1, 2, 3, 4, 5].map((item) => <ColumnSkeleton key={item} />)}</div>
+      </div>
     )
   }
 
-  return (
-    <>
-      {/* Page header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-black text-dark">Job Board</h1>
-          <p className="text-sm text-gray-neo mt-0.5">
-            {applications.length} application{applications.length !== 1 ? 's' : ''}
-          </p>
-        </div>
-        <button
-          onClick={() => handleAdd('wishlist')}
-          className="btn-primary"
-        >
-          + Add application
+  if (error && applications.length === 0) {
+    return (
+      <div className="card-neo mx-auto mt-12 max-w-lg text-center" role="alert">
+        <AlertTriangle size={36} className="mx-auto mb-3" aria-hidden="true" />
+        <h1 className="text-xl font-black">Your board did not load</h1>
+        <p className="mt-2 text-sm font-medium text-gray-neo">{error}</p>
+        <button type="button" onClick={() => void fetchApplications()} className="btn-dark mt-5">
+          <RefreshCw size={17} aria-hidden="true" /> Try again
         </button>
       </div>
+    )
+  }
 
-      {/* Kanban board */}
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCorners}
-        onDragStart={handleDragStart}
-        onDragOver={handleDragOver}
-        onDragEnd={handleDragEnd}
-      >
-        <div className="flex gap-4 overflow-x-auto pb-6 -mx-4 px-4 md:mx-0 md:px-0">
-          {COLUMNS.map((col) => (
+  const visibleColumns = isDesktop ? COLUMNS : COLUMNS.filter((column) => column.status === mobileStatus)
+
+  return (
+    <>
+      <header className="mb-5 flex items-center justify-between gap-4">
+        <div>
+          <p className="mb-1 text-xs font-black uppercase tracking-[0.18em] text-dark/55">Application tracker</p>
+          <h1 className="text-2xl font-black text-dark sm:text-3xl">Job Board</h1>
+          <p className="mt-1 text-sm font-semibold text-gray-neo">{applications.length} application{applications.length === 1 ? '' : 's'} across your pipeline</p>
+        </div>
+        <button type="button" onClick={() => handleAdd(isDesktop ? 'wishlist' : mobileStatus)} className="btn-primary shrink-0 px-3 sm:px-5">
+          <Plus size={18} strokeWidth={3} aria-hidden="true" /><span className="hidden sm:inline">Add application</span><span className="sm:hidden">Add</span>
+        </button>
+      </header>
+
+      <nav className="-mx-4 mb-4 overflow-x-auto px-4 md:hidden" aria-label="Application status">
+        <div className="flex min-w-max gap-2 pb-1">
+          {COLUMNS.map((column) => {
+            const count = getColumnApps(column.status).length
+            const active = mobileStatus === column.status
+            return (
+              <button
+                key={column.status}
+                type="button"
+                onClick={() => setMobileStatus(column.status)}
+                className={`min-h-11 border-2 border-dark px-3 text-xs font-black uppercase tracking-wide ${active ? `${column.color} shadow-neo-sm` : 'bg-white'}`}
+                aria-current={active ? 'page' : undefined}
+              >
+                {column.label} <span className="ml-1 opacity-65">{count}</span>
+              </button>
+            )
+          })}
+        </div>
+      </nav>
+
+      <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+        <div className="flex w-full gap-4 overflow-x-auto pb-6 md:min-w-max">
+          {visibleColumns.map((column) => (
             <KanbanColumn
-              key={col.status}
-              status={col.status}
-              label={col.label}
-              color={col.color}
-              applications={getColumnApps(col.status)}
+              key={column.status}
+              {...column}
+              applications={getColumnApps(column.status)}
               onAdd={handleAdd}
-              onEdit={handleEdit}
+              onEdit={(application) => { setEditingApp(application); setModalOpen(true) }}
               onDelete={handleDelete}
               onArchive={handleArchive}
-              collapsible={col.collapsible}
+              onSetReminder={openReminder}
+              onMove={(application, status) => void moveApplication(application, status).catch((moveError: unknown) => toast.error(getApiErrorData(moveError).message || 'We could not move this application.'))}
+              dragEnabled={isDesktop}
+              collapsible={isDesktop && column.collapsible}
             />
           ))}
         </div>
 
-        {/* Drag overlay */}
         <DragOverlay>
           {activeApp && (
-            <div className="rotate-2 opacity-90">
-              <ApplicationCard
-                application={activeApp}
-                onEdit={() => {}}
-                onDelete={() => {}}
-                onArchive={() => {}}
-              />
+            <div className="w-[288px] rotate-2 opacity-95">
+              <ApplicationCard application={activeApp} onEdit={() => undefined} onDelete={() => undefined} onArchive={() => undefined} />
             </div>
           )}
         </DragOverlay>
       </DndContext>
 
-      {/* Modal */}
       <ApplicationModal
         open={modalOpen}
         onClose={() => { setModalOpen(false); setEditingApp(null) }}
         onSubmit={handleModalSubmit}
         initialData={editingApp}
         defaultStatus={defaultStatus}
+      />
+
+      <InterviewReminderPrompt
+        key={reminderApp?.id ?? 'closed'}
+        application={reminderApp}
+        saving={reminderSaving}
+        error={reminderError}
+        onClose={() => setReminderApp(null)}
+        onSave={handleSaveReminder}
+      />
+
+      <ConfirmDialog
+        open={!!deletingApp}
+        title="Delete application?"
+        description={deletingApp ? `${deletingApp.job_title} at ${deletingApp.company} will be permanently removed.` : ''}
+        busy={deleteBusy}
+        onCancel={() => setDeletingApp(null)}
+        onConfirm={confirmDelete}
       />
     </>
   )

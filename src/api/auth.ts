@@ -9,6 +9,7 @@ export interface RegisterPayload {
 export interface LoginPayload {
   email: string
   password: string
+  remember_me?: boolean
 }
 
 export interface User {
@@ -29,8 +30,13 @@ export const authApi = {
     api.post('/auth/resend-verification', { email }),
   login: (data: LoginPayload) =>
     api.post<{ message: string; data: { token: string; user: User } }>('/auth/login', data),
-  googleAuth: (credential: string) =>
-    api.post<{ message: string; data: { token: string; user: User } }>('/auth/google', { credential }),
+  googleAuth: (credential: string, rememberMe = false) =>
+    api.post<{ message: string; data: { token: string; user: User } }>('/auth/google', {
+      credential,
+      remember_me: rememberMe,
+    }),
+  refresh: () =>
+    api.post<{ message: string; data: { token: string; user: User } }>('/auth/refresh'),
   me: () =>
     api.get<{ message: string; data: User }>('/auth/me'),
   logout: () =>

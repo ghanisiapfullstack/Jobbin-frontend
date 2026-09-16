@@ -5,8 +5,13 @@ import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { authApi } from '../../api/auth'
 import { useAuthStore } from '../../store/authStore'
+import { getApiErrorData } from '../../utils/apiError'
 
-export default function GoogleButton() {
+interface GoogleButtonProps {
+  rememberMe?: boolean
+}
+
+export default function GoogleButton({ rememberMe = false }: GoogleButtonProps) {
   const [loading, setLoading] = useState(false)
   const { setAuth } = useAuthStore()
   const navigate = useNavigate()
@@ -15,20 +20,19 @@ export default function GoogleButton() {
     onSuccess: async (tokenResponse) => {
       try {
         setLoading(true)
-        const res = await authApi.googleAuth(tokenResponse.access_token)
+        const res = await authApi.googleAuth(tokenResponse.access_token, rememberMe)
         const { token, user } = res.data.data
         setAuth(token, user)
-        toast.success(`Selamat datang, ${user.name}!`)
+        toast.success(`Welcome, ${user.name}!`)
         navigate('/board')
-      } catch (err: any) {
-        const msg = err?.response?.data?.message || 'Gagal login dengan Google'
-        toast.error(msg)
+      } catch (error: unknown) {
+        toast.error(getApiErrorData(error).message || 'Google sign-in failed. Please try again.')
       } finally {
         setLoading(false)
       }
     },
     onError: () => {
-      toast.error('Login Google dibatalkan')
+      toast.error('Google sign-in was cancelled.')
     },
   })
 
@@ -49,7 +53,7 @@ export default function GoogleButton() {
           <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
         </svg>
       )}
-      <span>{loading ? 'Memproses...' : 'Continue with Google'}</span>
+      <span>{loading ? 'Signing in...' : 'Continue with Google'}</span>
     </button>
   )
 }

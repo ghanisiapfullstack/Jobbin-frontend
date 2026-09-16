@@ -1,4 +1,5 @@
 import api from './axios'
+import { toInputDate } from '../utils/date'
 
 export type ApplicationStatus = 'wishlist' | 'applied' | 'interview' | 'offer' | 'rejected'
 
@@ -28,6 +29,22 @@ export interface ApplicationPayload {
   notes?: string
   applied_date?: string
   reminder_date?: string
+}
+
+export function toApplicationPayload(
+  application: Application,
+  overrides: Partial<ApplicationPayload> = {},
+): ApplicationPayload {
+  return {
+    job_title: application.job_title,
+    company: application.company,
+    url: application.url || '',
+    status: application.status,
+    notes: application.notes || '',
+    applied_date: toInputDate(application.applied_date),
+    reminder_date: toInputDate(application.reminder_date),
+    ...overrides,
+  }
 }
 
 export const applicationsApi = {

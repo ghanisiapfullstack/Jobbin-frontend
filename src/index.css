@@ -14,6 +14,20 @@
     -webkit-font-smoothing: antialiased;
   }
 
+  ::selection {
+    @apply bg-dark text-primary;
+  }
+
+  :focus-visible {
+    outline: 3px solid #1a1a1a;
+    outline-offset: 3px;
+  }
+
+  * {
+    scrollbar-color: #1a1a1a #FFFBF0;
+    scrollbar-width: thin;
+  }
+
   h1, h2, h3, h4, h5, h6 {
     @apply font-bold;
   }
@@ -57,6 +71,10 @@
     @apply btn bg-rejected text-dark px-5 py-2.5 text-sm;
   }
 
+  .icon-button {
+    @apply inline-flex h-11 w-11 items-center justify-center border-2 border-dark bg-white text-dark transition-colors;
+  }
+
   /* Input */
   .input-neo {
     @apply w-full border-2 border-dark px-4 py-2.5 text-sm font-medium bg-white shadow-neo-sm outline-none transition-all duration-100;
@@ -94,5 +112,25 @@
   /* Error message */
   .error-msg {
     @apply text-xs font-semibold text-red-600 mt-1;
+  }
+
+  .neo-dialog {
+    margin: auto;
+    color: inherit;
+  }
+
+  .neo-dialog::backdrop {
+    background: rgb(26 26 26 / 0.62);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html:focus-within {
+    scroll-behavior: auto !important;
+  }
+
+  .animate-spin,
+  .animate-pulse {
+    animation: none !important;
   }
 }

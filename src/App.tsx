@@ -1,17 +1,19 @@
-import { useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
-import { AnimatePresence, motion } from 'framer-motion'
+import { AnimatePresence, MotionConfig, motion } from 'framer-motion'
 import { ProtectedRoute, GuestRoute } from './components/RouteGuard'
 import AppLayout from './components/AppLayout'
 import SplashScreen from './pages/SplashScreen'
-import LandingPage from './pages/LandingPage'
-import RegisterPage from './pages/RegisterPage'
-import VerifyEmailPage from './pages/VerifyEmailPage'
-import LoginPage from './pages/LoginPage'
-import BoardPage from './pages/BoardPage'
-import ArchivedPage from './pages/ArchivedPage'
-import ProfilePage from './pages/ProfilePage'
+import { useAuthStore } from './store/authStore'
+
+const LandingPage = lazy(() => import('./pages/LandingPage'))
+const RegisterPage = lazy(() => import('./pages/RegisterPage'))
+const VerifyEmailPage = lazy(() => import('./pages/VerifyEmailPage'))
+const LoginPage = lazy(() => import('./pages/LoginPage'))
+const BoardPage = lazy(() => import('./pages/BoardPage'))
+const ArchivedPage = lazy(() => import('./pages/ArchivedPage'))
+const ProfilePage = lazy(() => import('./pages/ProfilePage'))
 
 // ── Page transition wrapper ─────────────────────────────────
 function PageTransition({ children }: { children: React.ReactNode }) {
@@ -62,14 +64,11 @@ function AnimatedRoutes() {
 
 // ── Main App ────────────────────────────────────────────────
 export default function App() {
-  const [loading, setLoading] = useState(true)
+  const initialize = useAuthStore((state) => state.initialize)
 
   useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 2000)
-    return () => clearTimeout(timer)
-  }, [])
-
-  if (loading) return <SplashScreen />
+    void initialize()
+  }, [initialize])
 
   return (
     <BrowserRouter>
@@ -84,7 +83,11 @@ export default function App() {
           },
         }}
       />
-      <AnimatedRoutes />
+      <MotionConfig reducedMotion="user">
+        <Suspense fallback={<SplashScreen compact />}>
+          <AnimatedRoutes />
+        </Suspense>
+      </MotionConfig>
     </BrowserRouter>
   )
 }
