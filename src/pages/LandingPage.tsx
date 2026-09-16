@@ -1,7 +1,7 @@
-import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, type Variants } from 'framer-motion'
-import { LayoutDashboard, BellRing, Archive, ArrowRight, Check, MoveRight, Loader2 } from 'lucide-react'
+import { LayoutDashboard, BellRing, Archive, ArrowRight, Check, MoveRight } from 'lucide-react'
+import JobbinLogo from '../components/ui/JobbinLogo'
 
 // ── Animation variants ──────────────────────────────────────
 const fadeUp: Variants = {
@@ -93,14 +93,7 @@ const STEPS = [
 // ── Component ───────────────────────────────────────────────
 export default function LandingPage() {
   const navigate = useNavigate()
-  const [loadingBtn, setLoadingBtn] = useState<string | null>(null)
-
-  const handleNav = (to: string, key: string) => {
-    setLoadingBtn(key)
-    setTimeout(() => {
-      navigate(to)
-    }, 600)
-  }
+  const handleNav = (to: string) => navigate(to)
   return (
     <div className="min-h-screen bg-primary" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
 
@@ -112,26 +105,19 @@ export default function LandingPage() {
         className="sticky top-0 z-40 bg-primary border-b-3 border-dark"
       >
         <div className="max-w-screen-xl mx-auto px-6 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 bg-dark border-2 border-dark flex items-center justify-center">
-              <span className="text-primary text-sm font-black">J</span>
-            </div>
-            <span className="text-lg font-black text-dark tracking-tight">JOBBIN</span>
-          </div>
+          <JobbinLogo size="sm" />
           <div className="flex items-center gap-2">
             <button
-              onClick={() => handleNav('/login', 'nav-login')}
-              disabled={!!loadingBtn}
-              className="btn-outline text-sm px-4 py-1.5 flex items-center gap-1.5 disabled:opacity-60"
+              onClick={() => handleNav('/login')}
+              className="btn-outline text-sm px-4 py-1.5"
             >
-              {loadingBtn === 'nav-login' ? <Loader2 size={14} className="animate-spin" /> : 'Sign in'}
+              Sign in
             </button>
             <button
-              onClick={() => handleNav('/register', 'nav-register')}
-              disabled={!!loadingBtn}
-              className="btn-dark text-sm px-4 py-1.5 flex items-center gap-1.5 disabled:opacity-60"
+              onClick={() => handleNav('/register')}
+              className="btn-dark text-sm px-4 py-1.5"
             >
-              {loadingBtn === 'nav-register' ? <Loader2 size={14} className="animate-spin" /> : <><span>Get started</span><ArrowRight size={14} /></>}
+              <span>Get started</span><ArrowRight size={14} />
             </button>
           </div>
         </div>
@@ -185,22 +171,16 @@ export default function LandingPage() {
             className="flex flex-wrap gap-3"
           >
             <button
-              onClick={() => handleNav('/register', 'hero-register')}
-              disabled={!!loadingBtn}
-              className="btn-dark text-base px-6 py-3 flex items-center gap-2 disabled:opacity-60"
+              onClick={() => handleNav('/register')}
+              className="btn-dark text-base px-6 py-3"
             >
-              {loadingBtn === 'hero-register'
-                ? <><Loader2 size={16} className="animate-spin" /> Loading...</>
-                : <>Start for free <ArrowRight size={16} /></>}
+              Start for free <ArrowRight size={16} />
             </button>
             <button
-              onClick={() => handleNav('/login', 'hero-login')}
-              disabled={!!loadingBtn}
-              className="btn-outline text-base px-6 py-3 flex items-center gap-2 disabled:opacity-60"
+              onClick={() => handleNav('/login')}
+              className="btn-outline text-base px-6 py-3"
             >
-              {loadingBtn === 'hero-login'
-                ? <><Loader2 size={16} className="animate-spin" /> Loading...</>
-                : 'Sign in'}
+              Sign in
             </button>
           </motion.div>
 
@@ -264,7 +244,7 @@ export default function LandingPage() {
                       <p className="text-xs text-dark/50 mt-0.5 font-medium">{card.company}</p>
                       {card.tag && (
                         <span className={`mt-1.5 inline-block text-[10px] font-black px-1.5 py-0.5 border border-dark/30 ${card.tag === 'TODAY' ? 'bg-rejected text-dark' : 'bg-interview text-dark'}`}>
-                          {card.tag === 'TODAY' ? '⏰ TODAY' : '⏰ TOMORROW'}
+                          <BellRing size={11} className="mr-1 inline" aria-hidden="true" /> {card.tag}
                         </span>
                       )}
                     </div>
@@ -385,13 +365,10 @@ export default function LandingPage() {
             className="inline-block"
           >
             <button
-              onClick={() => handleNav('/register', 'cta-register')}
-              disabled={!!loadingBtn}
-              className="btn-dark text-lg px-8 py-4 flex items-center gap-2 disabled:opacity-60"
+              onClick={() => handleNav('/register')}
+              className="btn-dark text-lg px-8 py-4"
             >
-              {loadingBtn === 'cta-register'
-                ? <><Loader2 size={18} className="animate-spin" /> Loading...</>
-                : <>Start for free <MoveRight size={18} /></>}
+              Start for free <MoveRight size={18} />
             </button>
           </motion.div>
         </motion.div>
@@ -400,24 +377,19 @@ export default function LandingPage() {
       {/* ── Footer ─────────────────────────────────────────── */}
       <footer className="bg-dark py-8">
         <div className="max-w-screen-xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 bg-primary border-2 border-primary flex items-center justify-center">
-              <span className="text-dark text-xs font-black">J</span>
-            </div>
-            <span className="text-sm font-black text-primary">JOBBIN</span>
-          </div>
+          <JobbinLogo size="sm" inverse />
           <p className="text-xs text-primary/30 font-medium">
             © {new Date().getFullYear()} Jobbin. Built with focus and determination.
           </p>
           <div className="flex gap-4">
             <button
-              onClick={() => handleNav('/login', 'footer-login')}
+              onClick={() => handleNav('/login')}
               className="text-xs text-primary/50 font-bold hover:text-primary transition-colors"
             >
               Sign in
             </button>
             <button
-              onClick={() => handleNav('/register', 'footer-register')}
+              onClick={() => handleNav('/register')}
               className="text-xs text-primary/50 font-bold hover:text-primary transition-colors"
             >
               Register

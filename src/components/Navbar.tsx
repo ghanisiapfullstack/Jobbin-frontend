@@ -4,6 +4,8 @@ import { useAuthStore } from '../store/authStore'
 import { authApi } from '../api/auth'
 import toast from 'react-hot-toast'
 import ReminderBell from './ReminderBell'
+import JobbinLogo from './ui/JobbinLogo'
+import { Menu, X } from 'lucide-react'
 
 const NAV_LINKS = [
   { to: '/board', label: 'Board' },
@@ -31,11 +33,8 @@ export default function Navbar() {
     <header className="bg-primary border-b-3 border-dark sticky top-0 z-40">
       <div className="max-w-screen-xl mx-auto px-4 h-14 flex items-center justify-between">
         {/* Logo */}
-        <Link to="/board" className="flex items-center gap-2 shrink-0">
-          <div className="w-7 h-7 bg-dark flex items-center justify-center border-2 border-dark">
-            <span className="text-primary text-sm font-black">J</span>
-          </div>
-          <span className="text-lg font-black text-dark tracking-tight">JOBBIN</span>
+        <Link to="/board" className="shrink-0" aria-label="Jobbin board">
+          <JobbinLogo size="sm" />
         </Link>
 
         {/* Desktop nav */}
@@ -68,10 +67,11 @@ export default function Navbar() {
           {/* Mobile hamburger */}
           <button
             onClick={() => setMenuOpen(!menuOpen)}
-            className="md:hidden w-9 h-9 border-2 border-dark bg-white flex items-center justify-center font-black shadow-neo-sm"
+            className="md:hidden icon-button shadow-neo-sm"
             aria-label="Toggle menu"
+            aria-expanded={menuOpen}
           >
-            {menuOpen ? '✕' : '☰'}
+            {menuOpen ? <X size={20} strokeWidth={3} /> : <Menu size={20} strokeWidth={3} />}
           </button>
         </div>
       </div>

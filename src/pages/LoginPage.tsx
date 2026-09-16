@@ -6,6 +6,8 @@ import { useRemindersStore } from '../store/remindersStore'
 import toast from 'react-hot-toast'
 import PasswordToggle from '../components/ui/PasswordToggle'
 import GoogleButton from '../components/ui/GoogleButton'
+import JobbinLogo from '../components/ui/JobbinLogo'
+import { getApiErrorData, getApiStatus } from '../utils/apiError'
 
 interface FormErrors {
   email?: string
@@ -19,6 +21,7 @@ export default function LoginPage() {
   const [errors, setErrors] = useState<FormErrors>({})
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+  const [rememberMe, setRememberMe] = useState(false)
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }))
@@ -30,8 +33,8 @@ export default function LoginPage() {
 
     // Client-side validation
     const newErrors: FormErrors = {}
-    if (!form.email.trim()) newErrors.email = 'Email wajib diisi'
-    if (!form.password) newErrors.password = 'Password wajib diisi'
+    if (!form.email.trim()) newErrors.email = 'Enter your email address.'
+    if (!form.password) newErrors.password = 'Enter your password.'
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors)
       return
@@ -41,55 +44,50 @@ export default function LoginPage() {
     setErrors({})
 
     try {
-      const res = await authApi.login(form)
+      const res = await authApi.login({ ...form, remember_me: rememberMe })
       const { token, user } = res.data.data
       setAuth(token, user)
       toast.success(`Welcome back, ${user.name}!`)
 
-      // Fetch reminders dan tampilkan popup kalau ada
+      // Surface urgent reminders immediately after sign-in.
       try {
         const remindersStore = useRemindersStore.getState()
         await remindersStore.fetchReminders()
         const { today, tomorrow } = useRemindersStore.getState()
         const total = today.length + tomorrow.length
         if (total > 0) {
-          setTimeout(() => {
-            toast(
-              `⏰ You have ${total} reminder${total > 1 ? 's' : ''} ${
-                today.length > 0 ? 'today' : 'tomorrow'
-              }!`,
-              {
-                duration: 5000,
-                icon: '🔔',
-                style: {
-                  border: '2px solid #1a1a1a',
-                  boxShadow: '4px 4px 0px #1a1a1a',
-                  fontFamily: 'Space Grotesk, sans-serif',
-                  fontWeight: 600,
-                  background: '#FFD600',
-                },
-              }
-            )
-          }, 1000)
+          toast(
+            `You have ${total} reminder${total > 1 ? 's' : ''} ${today.length > 0 ? 'today' : 'tomorrow'}.`,
+            {
+              duration: 5000,
+              style: {
+                border: '2px solid #1a1a1a',
+                boxShadow: '4px 4px 0px #1a1a1a',
+                fontFamily: 'Space Grotesk, sans-serif',
+                fontWeight: 600,
+                background: '#FFD600',
+              },
+            },
+          )
         }
       } catch {
         // silent fail — reminder tidak kritis
       }
 
       navigate('/board')
-    } catch (err: any) {
-      const data = err.response?.data
-      const status = err.response?.status
+    } catch (error: unknown) {
+      const data = getApiErrorData(error)
+      const status = getApiStatus(error)
 
       if (status === 422 && data?.errors) {
-        setErrors(data.errors)
+        setErrors(data.errors || {})
       } else if (status === 403) {
         toast.error('Please verify your email first.')
         navigate(`/verify-email?email=${encodeURIComponent(form.email)}`)
       } else if (status === 429) {
         toast.error('Too many attempts. Please wait 1 minute.')
       } else {
-        toast.error(data?.message || 'Invalid email or password.')
+        toast.error(data.message || 'Invalid email or password.')
       }
     } finally {
       setLoading(false)
@@ -100,12 +98,7 @@ export default function LoginPage() {
     <div className="min-h-screen bg-primary flex items-center justify-center px-4 py-8 sm:py-12">
       <div className="w-full max-w-md">
         {/* Logo */}
-        <div className="flex items-center gap-3 mb-8">
-          <div className="w-10 h-10 bg-dark border-2 border-dark flex items-center justify-center">
-            <span className="text-primary text-xl font-black">J</span>
-          </div>
-          <h1 className="text-2xl font-black text-dark">JOBBIN</h1>
-        </div>
+        <Link to="/" className="mb-8 inline-flex" aria-label="Jobbin home"><JobbinLogo /></Link>
 
         <div className="card-neo">
           <h2 className="text-2xl font-black text-dark mb-1">Welcome back</h2>
@@ -147,6 +140,16 @@ export default function LoginPage() {
               {errors.password && <p className="error-msg">{errors.password}</p>}
             </div>
 
+            <label className="flex cursor-pointer items-center gap-3 text-sm font-bold text-dark">
+              <input
+                type="checkbox"
+                checked={rememberMe}
+                onChange={(event) => setRememberMe(event.target.checked)}
+                className="h-5 w-5 accent-dark"
+              />
+              Keep me signed in for 30 days
+            </label>
+
             <button
               type="submit"
               disabled={loading}
@@ -164,7 +167,7 @@ export default function LoginPage() {
           </div>
 
           {/* Google Sign In */}
-          <GoogleButton />
+          <GoogleButton rememberMe={rememberMe} />
 
 
           <p className="text-sm text-center text-gray-neo mt-6">

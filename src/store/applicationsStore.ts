@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import type { Application, ApplicationStatus, ApplicationPayload } from '../api/applications'
 import { applicationsApi } from '../api/applications'
+import { getApiErrorData } from '../utils/apiError'
 
 interface ApplicationsState {
   applications: Application[]
@@ -25,8 +26,8 @@ export const useApplicationsStore = create<ApplicationsState>((set, get) => ({
     try {
       const res = await applicationsApi.list({ archived: false })
       set({ applications: res.data.data || [] })
-    } catch (err: any) {
-      set({ error: err.response?.data?.message || 'Gagal mengambil data' })
+    } catch (error: unknown) {
+      set({ error: getApiErrorData(error).message || 'We could not load your applications.' })
     } finally {
       set({ loading: false })
     }
@@ -37,8 +38,8 @@ export const useApplicationsStore = create<ApplicationsState>((set, get) => ({
     try {
       const res = await applicationsApi.list({ archived: true })
       set({ applications: res.data.data || [] })
-    } catch (err: any) {
-      set({ error: err.response?.data?.message || 'Gagal mengambil data' })
+    } catch (error: unknown) {
+      set({ error: getApiErrorData(error).message || 'We could not load your archived applications.' })
     } finally {
       set({ loading: false })
     }
@@ -69,9 +70,10 @@ export const useApplicationsStore = create<ApplicationsState>((set, get) => ({
     }))
     try {
       await applicationsApi.updatePosition(id, position, status)
-    } catch {
+    } catch (error: unknown) {
       // Revert on error
-      get().fetchApplications()
+      await get().fetchApplications()
+      throw error
     }
   },
 

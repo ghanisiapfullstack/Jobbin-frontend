@@ -2,6 +2,9 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { authApi } from '../api/auth'
 import toast from 'react-hot-toast'
+import { Check, Mail, X } from 'lucide-react'
+import JobbinLogo from '../components/ui/JobbinLogo'
+import { getApiErrorData } from '../utils/apiError'
 
 type Status = 'idle' | 'verifying' | 'success' | 'error'
 
@@ -15,19 +18,27 @@ export default function VerifyEmailPage() {
   const [resendLoading, setResendLoading] = useState(false)
   const [resendCooldown, setResendCooldown] = useState(0)
 
-  // Auto-verify kalau ada token di URL
+  // Verify automatically when the URL contains a token.
   useEffect(() => {
     if (!token) return
+    let redirectTimer: ReturnType<typeof setTimeout> | undefined
     authApi.verifyEmail(token)
       .then(() => {
         setStatus('success')
         toast.success('Email verified! Redirecting to login...')
-        setTimeout(() => navigate('/login'), 2000)
+        redirectTimer = setTimeout(() => navigate('/login'), 1600)
       })
       .catch(() => {
         setStatus('error')
       })
-  }, [token])
+    return () => { if (redirectTimer) clearTimeout(redirectTimer) }
+  }, [navigate, token])
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return
+    const timer = window.setTimeout(() => setResendCooldown((value) => value - 1), 1000)
+    return () => window.clearTimeout(timer)
+  }, [resendCooldown])
 
   const handleResend = async () => {
     if (!email || resendCooldown > 0) return
@@ -35,16 +46,9 @@ export default function VerifyEmailPage() {
     try {
       await authApi.resendVerification(email)
       toast.success('Verification email sent!')
-      // Cooldown 60 detik
       setResendCooldown(60)
-      const interval = setInterval(() => {
-        setResendCooldown((prev) => {
-          if (prev <= 1) { clearInterval(interval); return 0 }
-          return prev - 1
-        })
-      }, 1000)
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Gagal kirim ulang email.')
+    } catch (error: unknown) {
+      toast.error(getApiErrorData(error).message || 'We could not resend the email.')
     } finally {
       setResendLoading(false)
     }
@@ -54,12 +58,7 @@ export default function VerifyEmailPage() {
     <div className="min-h-screen bg-primary flex items-center justify-center px-4 py-8 sm:py-12">
       <div className="w-full max-w-md">
         {/* Logo */}
-        <div className="flex items-center gap-3 mb-8">
-          <div className="w-10 h-10 bg-dark border-2 border-dark flex items-center justify-center">
-            <span className="text-primary text-xl font-black">J</span>
-          </div>
-          <h1 className="text-2xl font-black text-dark">JOBBIN</h1>
-        </div>
+        <Link to="/" className="mb-8 inline-flex" aria-label="Jobbin home"><JobbinLogo /></Link>
 
         <div className="card-neo">
           {/* Verifying state */}
@@ -74,8 +73,8 @@ export default function VerifyEmailPage() {
           {/* Success state */}
           {status === 'success' && (
             <div className="text-center py-6">
-              <div className="w-16 h-16 bg-offer border-2 border-dark shadow-neo mx-auto mb-4 flex items-center justify-center text-3xl">
-                ✓
+              <div className="w-16 h-16 bg-offer border-2 border-dark shadow-neo mx-auto mb-4 flex items-center justify-center">
+                <Check size={32} strokeWidth={3} aria-hidden="true" />
               </div>
               <h2 className="text-xl font-black mb-2">Email verified!</h2>
               <p className="text-sm text-gray-neo">Redirecting to login...</p>
@@ -85,8 +84,8 @@ export default function VerifyEmailPage() {
           {/* Error state */}
           {status === 'error' && (
             <div className="text-center py-6">
-              <div className="w-16 h-16 bg-rejected border-2 border-dark shadow-neo mx-auto mb-4 flex items-center justify-center text-3xl">
-                ✕
+              <div className="w-16 h-16 bg-rejected border-2 border-dark shadow-neo mx-auto mb-4 flex items-center justify-center">
+                <X size={32} strokeWidth={3} aria-hidden="true" />
               </div>
               <h2 className="text-xl font-black mb-2">Link invalid or expired</h2>
               <p className="text-sm text-gray-neo mb-6">
@@ -111,8 +110,8 @@ export default function VerifyEmailPage() {
           {/* Idle state — user baru register, belum klik link */}
           {status === 'idle' && (
             <div>
-              <div className="w-16 h-16 bg-primary border-2 border-dark shadow-neo mb-4 flex items-center justify-center text-3xl">
-                ✉
+              <div className="w-16 h-16 bg-primary border-2 border-dark shadow-neo mb-4 flex items-center justify-center">
+                <Mail size={30} strokeWidth={2.5} aria-hidden="true" />
               </div>
               <h2 className="text-2xl font-black mb-2">Check your email</h2>
               <p className="text-sm text-gray-neo mb-2">

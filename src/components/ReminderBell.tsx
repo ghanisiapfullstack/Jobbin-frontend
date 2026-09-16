@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { Bell, CalendarClock, CheckCircle2 } from 'lucide-react'
 import { useRemindersStore } from '../store/remindersStore'
 
 export default function ReminderBell() {
@@ -7,18 +8,15 @@ export default function ReminderBell() {
   const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    fetchReminders()
-  }, [])
+    void fetchReminders()
+  }, [fetchReminders])
 
-  // Close on outside click
   useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false)
-      }
+    const closeOnOutsideClick = (event: MouseEvent) => {
+      if (ref.current && !ref.current.contains(event.target as Node)) setOpen(false)
     }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
+    document.addEventListener('mousedown', closeOnOutsideClick)
+    return () => document.removeEventListener('mousedown', closeOnOutsideClick)
   }, [])
 
   const total = today.length + tomorrow.length
@@ -26,60 +24,57 @@ export default function ReminderBell() {
   return (
     <div className="relative" ref={ref}>
       <button
-        onClick={() => setOpen(!open)}
-        className="relative w-9 h-9 border-2 border-dark bg-white hover:bg-primary flex items-center justify-center shadow-neo-sm transition-colors"
-        aria-label={`Reminders — ${total} pending`}
+        type="button"
+        onClick={() => setOpen((value) => !value)}
+        className="icon-button relative shadow-neo-sm hover:bg-primary"
+        aria-label={`Reminders — ${total} upcoming`}
+        aria-haspopup="true"
+        aria-expanded={open}
       >
-        <span className="text-base">🔔</span>
+        <Bell size={19} strokeWidth={2.5} aria-hidden="true" />
         {total > 0 && (
-          <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-rejected border-2 border-dark text-dark text-[9px] font-black flex items-center justify-center">
+          <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center border-2 border-dark bg-rejected px-0.5 text-[9px] font-black">
             {total > 9 ? '9+' : total}
           </span>
         )}
       </button>
 
       {open && (
-        <div className="absolute right-0 top-11 w-72 bg-white border-2 border-dark shadow-neo-lg z-50">
-          {/* Header */}
-          <div className="bg-primary border-b-2 border-dark px-3 py-2">
-            <p className="font-black text-sm">Reminders</p>
+        <div className="absolute right-0 top-12 z-50 w-[min(18rem,calc(100vw-2rem))] border-2 border-dark bg-white shadow-neo-lg" role="dialog" aria-label="Upcoming reminders">
+          <div className="flex items-center gap-2 border-b-2 border-dark bg-primary px-3 py-2.5">
+            <CalendarClock size={17} aria-hidden="true" />
+            <p className="text-sm font-black">Upcoming reminders</p>
           </div>
 
           {total === 0 ? (
-            <div className="px-4 py-6 text-center">
-              <p className="text-2xl mb-1">🎉</p>
-              <p className="text-xs font-bold text-gray-neo">No reminders today or tomorrow</p>
+            <div className="px-4 py-7 text-center">
+              <CheckCircle2 size={28} className="mx-auto mb-2 text-dark/55" aria-hidden="true" />
+              <p className="text-xs font-bold text-gray-neo">Nothing due today or tomorrow.</p>
             </div>
           ) : (
             <div className="max-h-80 overflow-y-auto">
-              {/* Today */}
               {today.length > 0 && (
-                <div>
-                  <div className="px-3 py-1.5 bg-rejected/30 border-b border-dark/10">
-                    <p className="text-xs font-black text-dark uppercase tracking-wide">Today ⚡</p>
-                  </div>
-                  {today.map((r) => (
-                    <div key={r.id} className="px-3 py-2.5 border-b border-dark/10 hover:bg-rejected/10">
-                      <p className="text-sm font-bold truncate">{r.job_title}</p>
-                      <p className="text-xs text-gray-neo truncate">{r.company}</p>
+                <section aria-labelledby="reminders-today">
+                  <h2 id="reminders-today" className="border-b border-dark/10 bg-rejected/30 px-3 py-1.5 text-xs font-black uppercase tracking-wide">Today</h2>
+                  {today.map((reminder) => (
+                    <div key={reminder.id} className="border-b border-dark/10 px-3 py-2.5 hover:bg-rejected/10">
+                      <p className="truncate text-sm font-bold">{reminder.job_title}</p>
+                      <p className="truncate text-xs text-gray-neo">{reminder.company}</p>
                     </div>
                   ))}
-                </div>
+                </section>
               )}
 
-              {/* Tomorrow */}
               {tomorrow.length > 0 && (
-                <div>
-                  <div className="px-3 py-1.5 bg-interview/30 border-b border-dark/10">
-                    <p className="text-xs font-black text-dark uppercase tracking-wide">Tomorrow 🕐</p>
-                  </div>
-                  {tomorrow.map((r) => (
-                    <div key={r.id} className="px-3 py-2.5 border-b border-dark/10 hover:bg-interview/10">
-                      <p className="text-sm font-bold truncate">{r.job_title}</p>
-                      <p className="text-xs text-gray-neo truncate">{r.company}</p>
+                <section aria-labelledby="reminders-tomorrow">
+                  <h2 id="reminders-tomorrow" className="border-b border-dark/10 bg-interview/30 px-3 py-1.5 text-xs font-black uppercase tracking-wide">Tomorrow</h2>
+                  {tomorrow.map((reminder) => (
+                    <div key={reminder.id} className="border-b border-dark/10 px-3 py-2.5 hover:bg-interview/10">
+                      <p className="truncate text-sm font-bold">{reminder.job_title}</p>
+                      <p className="truncate text-xs text-gray-neo">{reminder.company}</p>
                     </div>
                   ))}
-                </div>
+                </section>
               )}
             </div>
           )}

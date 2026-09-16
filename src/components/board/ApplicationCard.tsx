@@ -1,11 +1,25 @@
+import { useRef, type ReactNode } from 'react'
+import {
+  Archive,
+  BellPlus,
+  BellRing,
+  CalendarDays,
+  ExternalLink,
+  MoreHorizontal,
+  Pencil,
+  Trash2,
+} from 'lucide-react'
 import type { Application, ApplicationStatus } from '../../api/applications'
-import { formatDate } from '../../utils/date'
+import { formatDate, getReminderTiming } from '../../utils/date'
 
 interface Props {
   application: Application
   onEdit: (app: Application) => void
   onDelete: (id: number) => void
   onArchive: (id: number) => void
+  onSetReminder?: (app: Application) => void
+  onMove?: (app: Application, status: ApplicationStatus) => void
+  dragHandle?: ReactNode
 }
 
 const STATUS_COLORS: Record<ApplicationStatus, string> = {
@@ -16,94 +30,115 @@ const STATUS_COLORS: Record<ApplicationStatus, string> = {
   rejected: 'badge-rejected',
 }
 
-export default function ApplicationCard({ application, onEdit, onDelete, onArchive }: Props) {
-  const hasReminder = !!application.reminder_date
+const STATUS_OPTIONS: ApplicationStatus[] = ['wishlist', 'applied', 'interview', 'offer', 'rejected']
+
+export default function ApplicationCard({
+  application,
+  onEdit,
+  onDelete,
+  onArchive,
+  onSetReminder,
+  onMove,
+  dragHandle,
+}: Props) {
+  const actionsRef = useRef<HTMLDetailsElement>(null)
+  const reminderTiming = getReminderTiming(application.reminder_date)
+
+  const runAction = (action: () => void) => {
+    actionsRef.current?.removeAttribute('open')
+    action()
+  }
 
   return (
-    <div className="bg-white border-2 border-dark shadow-neo-sm p-3 cursor-grab active:cursor-grabbing group">
-      {/* Header */}
-      <div className="flex items-start justify-between gap-2 mb-2">
-        <div className="flex-1 min-w-0">
-          <p className="font-bold text-sm text-dark leading-tight truncate">
-            {application.job_title}
-          </p>
-          <p className="text-xs text-gray-neo font-medium truncate mt-0.5">
-            {application.company}
-          </p>
+    <article className="bg-white border-2 border-dark shadow-neo-sm p-3.5 transition-transform hover:-translate-y-0.5 hover:shadow-neo">
+      <div className="flex items-start gap-2 mb-2.5">
+        {dragHandle}
+        <div className="flex-1 min-w-0 pt-1">
+          <h3 className="font-black text-sm text-dark leading-tight truncate">{application.job_title}</h3>
+          <p className="text-xs text-gray-neo font-semibold truncate mt-1">{application.company}</p>
         </div>
 
-        {/* Actions — visible on hover */}
-        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-          <button
-            onClick={(e) => { e.stopPropagation(); onEdit(application) }}
-            className="w-6 h-6 border-2 border-dark bg-white hover:bg-primary flex items-center justify-center text-xs font-bold transition-colors"
-            title="Edit"
-            aria-label="Edit application"
+        <details ref={actionsRef} className="relative shrink-0" onPointerDown={(event) => event.stopPropagation()}>
+          <summary
+            className="icon-button h-9 w-9 cursor-pointer list-none shadow-none hover:bg-primary [&::-webkit-details-marker]:hidden"
+            aria-label={`Actions for ${application.job_title}`}
           >
-            ✎
-          </button>
-          <button
-            onClick={(e) => { e.stopPropagation(); onArchive(application.id) }}
-            className="w-6 h-6 border-2 border-dark bg-white hover:bg-interview flex items-center justify-center text-xs font-bold transition-colors"
-            title="Archive"
-            aria-label="Archive application"
-          >
-            ⊡
-          </button>
-          <button
-            onClick={(e) => { e.stopPropagation(); onDelete(application.id) }}
-            className="w-6 h-6 border-2 border-dark bg-white hover:bg-rejected flex items-center justify-center text-xs font-bold transition-colors"
-            title="Delete"
-            aria-label="Delete application"
-          >
-            ✕
-          </button>
-        </div>
+            <MoreHorizontal size={18} strokeWidth={2.6} aria-hidden="true" />
+          </summary>
+          <div className="absolute right-0 top-10 z-30 w-40 border-2 border-dark bg-white p-1 shadow-neo">
+            <button type="button" onClick={() => runAction(() => onEdit(application))} className="flex min-h-10 w-full items-center gap-2 px-2 text-left text-xs font-bold hover:bg-primary">
+              <Pencil size={15} aria-hidden="true" /> Edit
+            </button>
+            <button type="button" onClick={() => runAction(() => onArchive(application.id))} className="flex min-h-10 w-full items-center gap-2 px-2 text-left text-xs font-bold hover:bg-interview">
+              <Archive size={15} aria-hidden="true" /> Archive
+            </button>
+            <button type="button" onClick={() => runAction(() => onDelete(application.id))} className="flex min-h-10 w-full items-center gap-2 px-2 text-left text-xs font-bold hover:bg-rejected">
+              <Trash2 size={15} aria-hidden="true" /> Delete
+            </button>
+          </div>
+        </details>
       </div>
 
-      {/* URL */}
       {application.url && (
         <a
           href={application.url}
           target="_blank"
           rel="noopener noreferrer"
-          onClick={(e) => e.stopPropagation()}
-          className="text-xs text-dark underline underline-offset-2 truncate block mb-2 hover:text-gray-neo"
+          onPointerDown={(event) => event.stopPropagation()}
+          className="mb-3 flex min-h-8 items-center gap-1.5 truncate text-xs font-semibold text-dark underline decoration-2 underline-offset-2 hover:text-dark/65"
         >
-          {application.url.replace(/^https?:\/\//, '').split('/')[0]}
+          <ExternalLink size={14} aria-hidden="true" />
+          <span className="truncate">{application.url.replace(/^https?:\/\//, '').split('/')[0]}</span>
         </a>
       )}
 
-      {/* Footer badges */}
-      <div className="flex items-center gap-1.5 flex-wrap">
-        <span className={`badge ${STATUS_COLORS[application.status]}`}>
-          {application.status}
-        </span>
+      {application.status === 'interview' && !application.reminder_date && onSetReminder && (
+        <button
+          type="button"
+          onPointerDown={(event) => event.stopPropagation()}
+          onClick={() => onSetReminder(application)}
+          className="mb-3 flex min-h-11 w-full items-center justify-center gap-2 border-2 border-dark bg-primary px-3 text-xs font-black shadow-neo-sm transition-transform active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
+        >
+          <BellPlus size={16} strokeWidth={2.5} aria-hidden="true" /> Set interview reminder
+        </button>
+      )}
 
-        {hasReminder && (() => {
-          const today = new Date().toISOString().split('T')[0]
-          const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0]
-          const rd = application.reminder_date?.split('T')[0] || application.reminder_date
-          const isToday = rd === today
-          const isTomorrow = rd === tomorrow
-          return (
-            <span
-              className={`badge ${
-                isToday ? 'bg-rejected' : isTomorrow ? 'bg-interview' : 'bg-primary'
-              }`}
-              title={`Reminder: ${formatDate(application.reminder_date)}`}
-            >
-              ⏰ {isToday ? 'TODAY' : isTomorrow ? 'TOMORROW' : formatDate(application.reminder_date)}
-            </span>
-          )
-        })()}
+      <div className="flex flex-wrap items-center gap-1.5">
+        <span className={`badge ${STATUS_COLORS[application.status]}`}>{application.status}</span>
+
+        {application.reminder_date && (
+          <span
+            className={`badge ${reminderTiming.isToday ? 'bg-rejected' : reminderTiming.isTomorrow ? 'bg-interview' : 'bg-primary'}`}
+            title={`Reminder: ${formatDate(application.reminder_date)}`}
+          >
+            <BellRing size={13} aria-hidden="true" />
+            {reminderTiming.isToday ? 'Today' : reminderTiming.isTomorrow ? 'Tomorrow' : formatDate(application.reminder_date)}
+          </span>
+        )}
 
         {application.applied_date && (
           <span className="badge bg-white" title="Applied date">
-            📅 {formatDate(application.applied_date)}
+            <CalendarDays size={13} aria-hidden="true" /> {formatDate(application.applied_date)}
           </span>
         )}
       </div>
-    </div>
+
+      {onMove && (
+        <div className="mt-3 border-t-2 border-dark/10 pt-3 md:hidden">
+          <label htmlFor={`move-application-${application.id}`} className="sr-only">Move {application.job_title}</label>
+          <select
+            id={`move-application-${application.id}`}
+            value={application.status}
+            onPointerDown={(event) => event.stopPropagation()}
+            onChange={(event) => onMove(application, event.target.value as ApplicationStatus)}
+            className="min-h-11 w-full border-2 border-dark bg-white px-3 text-xs font-black"
+          >
+            {STATUS_OPTIONS.map((status) => (
+              <option key={status} value={status}>Move to {status.charAt(0).toUpperCase() + status.slice(1)}</option>
+            ))}
+          </select>
+        </div>
+      )}
+    </article>
   )
 }

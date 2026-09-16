@@ -2,9 +2,12 @@ import { useState } from 'react'
 import toast from 'react-hot-toast'
 import { useAuthStore } from '../store/authStore'
 import api from '../api/axios'
+import { getApiErrorData } from '../utils/apiError'
+import { useNavigate } from 'react-router-dom'
 
 export default function ProfilePage() {
-  const { user, setUser } = useAuthStore()
+  const { user, setUser, clearAuth } = useAuthStore()
+  const navigate = useNavigate()
 
   const [nameForm, setNameForm] = useState({ name: user?.name || '' })
   const [nameLoading, setNameLoading] = useState(false)
@@ -27,8 +30,8 @@ export default function ProfilePage() {
       )
       setUser({ ...user!, name: res.data.data.name })
       toast.success('Name updated!')
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Failed to update name')
+    } catch (error: unknown) {
+      toast.error(getApiErrorData(error).message || 'We could not update your name.')
     } finally {
       setNameLoading(false)
     }
@@ -48,12 +51,14 @@ export default function ProfilePage() {
     setPwLoading(true)
     try {
       await api.put('/profile/password', pwForm)
-      toast.success('Password updated!')
+      clearAuth()
+      toast.success('Password updated. Please sign in again.')
       setPwForm({ current_password: '', new_password: '' })
-    } catch (err: any) {
-      const data = err.response?.data
-      if (data?.errors) setPwErrors(data.errors)
-      else toast.error(data?.message || 'Failed to update password')
+      navigate('/login', { replace: true })
+    } catch (error: unknown) {
+      const data = getApiErrorData(error)
+      if (data.errors) setPwErrors(data.errors)
+      else toast.error(data.message || 'We could not update your password.')
     } finally {
       setPwLoading(false)
     }
@@ -72,8 +77,11 @@ export default function ProfilePage() {
           <h2 className="text-lg font-black mb-4">Display name</h2>
           <form onSubmit={handleUpdateName} className="flex flex-col gap-4">
             <div>
-              <label className="label-neo">Name</label>
+              <label htmlFor="profile-name" className="label-neo">Name</label>
               <input
+                id="profile-name"
+                name="name"
+                autoComplete="name"
                 value={nameForm.name}
                 onChange={(e) => setNameForm({ name: e.target.value })}
                 className="input-neo"
@@ -95,9 +103,12 @@ export default function ProfilePage() {
           <h2 className="text-lg font-black mb-4">Change password</h2>
           <form onSubmit={handleUpdatePassword} className="flex flex-col gap-4">
             <div>
-              <label className="label-neo">Current password</label>
+              <label htmlFor="current-password" className="label-neo">Current password</label>
               <input
+                id="current-password"
+                name="current_password"
                 type="password"
+                autoComplete="current-password"
                 value={pwForm.current_password}
                 onChange={(e) => setPwForm((p) => ({ ...p, current_password: e.target.value }))}
                 className={`input-neo ${pwErrors.current_password ? 'border-red-500' : ''}`}
@@ -106,9 +117,12 @@ export default function ProfilePage() {
               {pwErrors.current_password && <p className="error-msg">{pwErrors.current_password}</p>}
             </div>
             <div>
-              <label className="label-neo">New password</label>
+              <label htmlFor="new-password" className="label-neo">New password</label>
               <input
+                id="new-password"
+                name="new_password"
                 type="password"
+                autoComplete="new-password"
                 value={pwForm.new_password}
                 onChange={(e) => setPwForm((p) => ({ ...p, new_password: e.target.value }))}
                 className={`input-neo ${pwErrors.new_password ? 'border-red-500' : ''}`}
