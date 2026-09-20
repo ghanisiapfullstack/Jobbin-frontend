@@ -1,35 +1,45 @@
-import { useState } from 'react'
-import toast from 'react-hot-toast'
-import { useAuthStore } from '../store/authStore'
-import api from '../api/axios'
-import { getApiErrorData } from '../utils/apiError'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { KeyRound, ShieldCheck } from 'lucide-react'
+import toast from 'react-hot-toast'
+import { authApi, type User } from '../api/auth'
+import { profileApi } from '../api/profile'
+import FormField from '../components/ui/FormField'
+import { useAuthStore } from '../store/authStore'
+import { getApiErrorData } from '../utils/apiError'
 
 export default function ProfilePage() {
   const { user, setUser, clearAuth } = useAuthStore()
   const navigate = useNavigate()
-
-  const [nameForm, setNameForm] = useState({ name: user?.name || '' })
+  const [profile, setProfile] = useState<User | null>(user)
+  const [profileError, setProfileError] = useState('')
+  const [name, setName] = useState(user?.name ?? '')
   const [nameLoading, setNameLoading] = useState(false)
-
-  const [pwForm, setPwForm] = useState({
-    current_password: '',
-    new_password: '',
-  })
+  const [pwForm, setPwForm] = useState({ current_password: '', new_password: '' })
   const [pwErrors, setPwErrors] = useState<Record<string, string>>({})
   const [pwLoading, setPwLoading] = useState(false)
+  const [linkLoading, setLinkLoading] = useState(false)
 
-  const handleUpdateName = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!nameForm.name.trim()) return
+  useEffect(() => {
+    void profileApi.show().then((response) => {
+      setProfile(response.data.data)
+      setName(response.data.data.name)
+      setUser(response.data.data)
+    }).catch((error: unknown) => {
+      setProfileError(getApiErrorData(error).message || 'We could not load your account settings.')
+    })
+  }, [setUser])
+
+  const handleUpdateName = async (event: React.FormEvent) => {
+    event.preventDefault()
+    if (!name.trim()) return
     setNameLoading(true)
     try {
-      const res = await api.put<{ message: string; data: { id: number; name: string; email: string } }>(
-        '/profile',
-        { name: nameForm.name.trim() }
-      )
-      setUser({ ...user!, name: res.data.data.name })
-      toast.success('Name updated!')
+      const response = await profileApi.updateName(name.trim())
+      const next = { ...(profile ?? user!), ...response.data.data }
+      setProfile(next)
+      setUser(next)
+      toast.success('Name updated')
     } catch (error: unknown) {
       toast.error(getApiErrorData(error).message || 'We could not update your name.')
     } finally {
@@ -37,109 +47,97 @@ export default function ProfilePage() {
     }
   }
 
-  const handleUpdatePassword = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setPwErrors({})
-    if (!pwForm.current_password || !pwForm.new_password) {
-      setPwErrors({ general: 'Both fields are required' })
-      return
-    }
-    if (pwForm.new_password.length < 6) {
-      setPwErrors({ new_password: 'Minimum 6 characters' })
-      return
-    }
+  const handleUpdatePassword = async (event: React.FormEvent) => {
+    event.preventDefault()
+    const nextErrors: Record<string, string> = {}
+    if (!pwForm.current_password) nextErrors.current_password = 'Enter your current password.'
+    if (pwForm.new_password.length < 8) nextErrors.new_password = 'Use at least 8 characters.'
+    setPwErrors(nextErrors)
+    if (Object.keys(nextErrors).length > 0) return
+
     setPwLoading(true)
     try {
-      await api.put('/profile/password', pwForm)
+      await profileApi.updatePassword(pwForm.current_password, pwForm.new_password)
       clearAuth()
       toast.success('Password updated. Please sign in again.')
-      setPwForm({ current_password: '', new_password: '' })
       navigate('/login', { replace: true })
     } catch (error: unknown) {
       const data = getApiErrorData(error)
       if (data.errors) setPwErrors(data.errors)
-      else toast.error(data.message || 'We could not update your password.')
+      else setPwErrors({ general: data.message || 'We could not update your password.' })
     } finally {
       setPwLoading(false)
     }
   }
 
+  const sendCreatePasswordLink = async () => {
+    if (!profile?.email) return
+    setLinkLoading(true)
+    try {
+      const response = await authApi.forgotPassword(profile.email)
+      toast.success(response.data.message, { duration: 6000 })
+    } catch (error: unknown) {
+      toast.error(getApiErrorData(error).message || 'We could not send the setup link.')
+    } finally {
+      setLinkLoading(false)
+    }
+  }
+
+  const hasPassword = profile?.has_password ?? true
+  const usesGoogle = profile?.auth_methods?.includes('google') ?? false
+
   return (
     <>
-      <div className="mb-6">
+      <header className="mb-6">
         <h1 className="text-2xl font-black text-dark">Profile</h1>
-        <p className="text-sm text-gray-neo mt-0.5">{user?.email}</p>
-      </div>
+        <p className="mt-0.5 text-sm text-gray-neo">{user?.email}</p>
+      </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl">
-        {/* Update name */}
-        <div className="card-neo">
-          <h2 className="text-lg font-black mb-4">Display name</h2>
+      {profileError && <div className="mb-5 border-2 border-red-600 bg-red-50 p-4 text-sm font-bold" role="alert">{profileError}</div>}
+
+      <div className="grid max-w-3xl grid-cols-1 gap-6 md:grid-cols-2">
+        <section className="card-neo" aria-labelledby="display-name-title">
+          <h2 id="display-name-title" className="mb-4 text-lg font-black">Display name</h2>
           <form onSubmit={handleUpdateName} className="flex flex-col gap-4">
-            <div>
-              <label htmlFor="profile-name" className="label-neo">Name</label>
-              <input
-                id="profile-name"
-                name="name"
-                autoComplete="name"
-                value={nameForm.name}
-                onChange={(e) => setNameForm({ name: e.target.value })}
-                className="input-neo"
-                placeholder="Your name"
-              />
-            </div>
-            <button
-              type="submit"
-              disabled={nameLoading}
-              className="btn-dark disabled:opacity-60 disabled:cursor-not-allowed"
-            >
-              {nameLoading ? 'Saving...' : 'Save name'}
-            </button>
+            <FormField id="profile-name" label="Name">
+              <input id="profile-name" name="name" autoComplete="name" value={name} onChange={(event) => setName(event.target.value)} className="input-neo" placeholder="Your name" />
+            </FormField>
+            <button type="submit" disabled={nameLoading} className="btn-dark disabled:cursor-not-allowed disabled:opacity-60">{nameLoading ? 'Saving…' : 'Save name'}</button>
           </form>
-        </div>
+        </section>
 
-        {/* Update password */}
-        <div className="card-neo">
-          <h2 className="text-lg font-black mb-4">Change password</h2>
-          <form onSubmit={handleUpdatePassword} className="flex flex-col gap-4">
+        <section className="card-neo" aria-labelledby="sign-in-title">
+          <div className="mb-4 flex items-start gap-3">
+            <ShieldCheck size={25} strokeWidth={2.5} aria-hidden="true" />
             <div>
-              <label htmlFor="current-password" className="label-neo">Current password</label>
-              <input
-                id="current-password"
-                name="current_password"
-                type="password"
-                autoComplete="current-password"
-                value={pwForm.current_password}
-                onChange={(e) => setPwForm((p) => ({ ...p, current_password: e.target.value }))}
-                className={`input-neo ${pwErrors.current_password ? 'border-red-500' : ''}`}
-                placeholder="••••••"
-              />
-              {pwErrors.current_password && <p className="error-msg">{pwErrors.current_password}</p>}
+              <h2 id="sign-in-title" className="text-lg font-black">Sign-in methods</h2>
+              <p className="mt-1 text-xs font-medium text-dark/60">Manage how you access this account.</p>
             </div>
+          </div>
+
+          {usesGoogle && <div className="mb-4 flex min-h-11 items-center justify-between gap-4 border-2 border-dark bg-bg-neo px-3 py-2 text-sm font-bold"><span>Google</span><span className="text-xs text-dark/55">Connected</span></div>}
+
+          {hasPassword ? (
+            <form onSubmit={handleUpdatePassword} className="flex flex-col gap-4">
+              <FormField id="current-password" label="Current password" error={pwErrors.current_password}>
+                <input id="current-password" name="current_password" type="password" autoComplete="current-password" value={pwForm.current_password} onChange={(event) => { setPwForm((current) => ({ ...current, current_password: event.target.value })); setPwErrors((current) => ({ ...current, current_password: '', general: '' })) }} aria-invalid={Boolean(pwErrors.current_password)} aria-describedby={pwErrors.current_password ? 'current-password-error' : undefined} className={`input-neo ${pwErrors.current_password ? 'border-red-600' : ''}`} />
+              </FormField>
+              <FormField id="new-password" label="New password" error={pwErrors.new_password} hint="Use at least 8 characters.">
+                <input id="new-password" name="new_password" type="password" autoComplete="new-password" value={pwForm.new_password} onChange={(event) => { setPwForm((current) => ({ ...current, new_password: event.target.value })); setPwErrors((current) => ({ ...current, new_password: '', general: '' })) }} aria-invalid={Boolean(pwErrors.new_password)} aria-describedby={pwErrors.new_password ? 'new-password-error' : 'new-password-hint'} className={`input-neo ${pwErrors.new_password ? 'border-red-600' : ''}`} />
+              </FormField>
+              {pwErrors.general && <p className="error-msg" role="alert">{pwErrors.general}</p>}
+              <button type="submit" disabled={pwLoading} className="btn-dark disabled:cursor-not-allowed disabled:opacity-60">{pwLoading ? 'Saving…' : 'Update password'}</button>
+            </form>
+          ) : (
             <div>
-              <label htmlFor="new-password" className="label-neo">New password</label>
-              <input
-                id="new-password"
-                name="new_password"
-                type="password"
-                autoComplete="new-password"
-                value={pwForm.new_password}
-                onChange={(e) => setPwForm((p) => ({ ...p, new_password: e.target.value }))}
-                className={`input-neo ${pwErrors.new_password ? 'border-red-500' : ''}`}
-                placeholder="Min. 6 characters"
-              />
-              {pwErrors.new_password && <p className="error-msg">{pwErrors.new_password}</p>}
+              <div className="mb-4 border-2 border-dark bg-interview/35 p-4">
+                <p className="font-black">No password yet</p>
+                <p className="mt-1 text-sm font-medium text-dark/70">You currently sign in with Google. We can email you a secure link to create a password.</p>
+              </div>
+              <button type="button" onClick={() => void sendCreatePasswordLink()} disabled={linkLoading} className="btn-dark w-full disabled:cursor-not-allowed disabled:opacity-60"><KeyRound size={17} aria-hidden="true" />{linkLoading ? 'Sending…' : 'Email password setup link'}</button>
             </div>
-            {pwErrors.general && <p className="error-msg">{pwErrors.general}</p>}
-            <button
-              type="submit"
-              disabled={pwLoading}
-              className="btn-dark disabled:opacity-60 disabled:cursor-not-allowed"
-            >
-              {pwLoading ? 'Saving...' : 'Update password'}
-            </button>
-          </form>
-        </div>
+          )}
+        </section>
       </div>
     </>
   )

@@ -1,22 +1,18 @@
-import { useRef, type ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import {
-  Archive,
   BellPlus,
-  BellRing,
   CalendarDays,
   ExternalLink,
-  MoreHorizontal,
+  HandCoins,
   Pencil,
-  Trash2,
 } from 'lucide-react'
 import type { Application, ApplicationStatus } from '../../api/applications'
-import { formatDate, getReminderTiming } from '../../utils/date'
+import { EMPLOYMENT_TYPE_LABELS, formatSalaryRange } from '../../utils/application'
+import { formatDate } from '../../utils/date'
 
 interface Props {
   application: Application
   onEdit: (app: Application) => void
-  onDelete: (id: number) => void
-  onArchive: (id: number) => void
   onSetReminder?: (app: Application) => void
   onMove?: (app: Application, status: ApplicationStatus) => void
   dragHandle?: ReactNode
@@ -35,48 +31,29 @@ const STATUS_OPTIONS: ApplicationStatus[] = ['wishlist', 'applied', 'interview',
 export default function ApplicationCard({
   application,
   onEdit,
-  onDelete,
-  onArchive,
   onSetReminder,
   onMove,
   dragHandle,
 }: Props) {
-  const actionsRef = useRef<HTMLDetailsElement>(null)
-  const reminderTiming = getReminderTiming(application.reminder_date)
-
-  const runAction = (action: () => void) => {
-    actionsRef.current?.removeAttribute('open')
-    action()
-  }
+  const salary = formatSalaryRange(application.salary_min, application.salary_max)
 
   return (
-    <article className="bg-white border-2 border-dark shadow-neo-sm p-3.5 transition-transform hover:-translate-y-0.5 hover:shadow-neo">
+    <article className="flex min-h-[236px] h-full flex-col border-2 border-dark bg-white p-3.5 shadow-neo-sm transition-transform hover:-translate-y-0.5 hover:shadow-neo md:h-[280px]">
       <div className="flex items-start gap-2 mb-2.5">
         {dragHandle}
         <div className="flex-1 min-w-0 pt-1">
-          <h3 className="font-black text-sm text-dark leading-tight truncate">{application.job_title}</h3>
+          <h3 className="line-clamp-2 min-h-9 text-sm font-black leading-tight text-dark">{application.job_title}</h3>
           <p className="text-xs text-gray-neo font-semibold truncate mt-1">{application.company}</p>
         </div>
-
-        <details ref={actionsRef} className="relative shrink-0" onPointerDown={(event) => event.stopPropagation()}>
-          <summary
-            className="icon-button h-9 w-9 cursor-pointer list-none shadow-none hover:bg-primary [&::-webkit-details-marker]:hidden"
-            aria-label={`Actions for ${application.job_title}`}
-          >
-            <MoreHorizontal size={18} strokeWidth={2.6} aria-hidden="true" />
-          </summary>
-          <div className="absolute right-0 top-10 z-30 w-40 border-2 border-dark bg-white p-1 shadow-neo">
-            <button type="button" onClick={() => runAction(() => onEdit(application))} className="flex min-h-10 w-full items-center gap-2 px-2 text-left text-xs font-bold hover:bg-primary">
-              <Pencil size={15} aria-hidden="true" /> Edit
-            </button>
-            <button type="button" onClick={() => runAction(() => onArchive(application.id))} className="flex min-h-10 w-full items-center gap-2 px-2 text-left text-xs font-bold hover:bg-interview">
-              <Archive size={15} aria-hidden="true" /> Archive
-            </button>
-            <button type="button" onClick={() => runAction(() => onDelete(application.id))} className="flex min-h-10 w-full items-center gap-2 px-2 text-left text-xs font-bold hover:bg-rejected">
-              <Trash2 size={15} aria-hidden="true" /> Delete
-            </button>
-          </div>
-        </details>
+        <button
+          type="button"
+          onPointerDown={(event) => event.stopPropagation()}
+          onClick={() => onEdit(application)}
+          className="icon-button h-9 w-9 shrink-0 shadow-none hover:bg-primary"
+          aria-label={`Edit ${application.job_title}`}
+        >
+          <Pencil size={17} strokeWidth={2.7} aria-hidden="true" />
+        </button>
       </div>
 
       {application.url && (
@@ -92,6 +69,25 @@ export default function ApplicationCard({
         </a>
       )}
 
+      {(application.employment_type || salary) && (
+        <div className="mb-3 flex flex-wrap gap-1.5">
+          {application.employment_type && <span className="badge bg-bg-neo">{EMPLOYMENT_TYPE_LABELS[application.employment_type]}</span>}
+          {salary && <span className="badge bg-white"><HandCoins size={13} aria-hidden="true" /> {salary}</span>}
+        </div>
+      )}
+
+      {application.notes && (
+        <button
+          type="button"
+          onPointerDown={(event) => event.stopPropagation()}
+          onClick={() => onEdit(application)}
+          className="mb-3 line-clamp-2 w-full text-left text-xs font-medium leading-relaxed text-dark/65 underline-offset-2 hover:text-dark hover:underline"
+          aria-label={`Read notes for ${application.job_title}`}
+        >
+          {application.notes}
+        </button>
+      )}
+
       {application.status === 'interview' && !application.reminder_date && onSetReminder && (
         <button
           type="button"
@@ -103,18 +99,8 @@ export default function ApplicationCard({
         </button>
       )}
 
-      <div className="flex flex-wrap items-center gap-1.5">
+      <div className="mt-auto flex flex-wrap items-center gap-1.5">
         <span className={`badge ${STATUS_COLORS[application.status]}`}>{application.status}</span>
-
-        {application.reminder_date && (
-          <span
-            className={`badge ${reminderTiming.isToday ? 'bg-rejected' : reminderTiming.isTomorrow ? 'bg-interview' : 'bg-primary'}`}
-            title={`Reminder: ${formatDate(application.reminder_date)}`}
-          >
-            <BellRing size={13} aria-hidden="true" />
-            {reminderTiming.isToday ? 'Today' : reminderTiming.isTomorrow ? 'Tomorrow' : formatDate(application.reminder_date)}
-          </span>
-        )}
 
         {application.applied_date && (
           <span className="badge bg-white" title="Applied date">

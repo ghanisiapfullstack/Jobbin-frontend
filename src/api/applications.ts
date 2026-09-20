@@ -2,6 +2,7 @@ import api from './axios'
 import { toInputDate } from '../utils/date'
 
 export type ApplicationStatus = 'wishlist' | 'applied' | 'interview' | 'offer' | 'rejected'
+export type EmploymentType = 'full_time' | 'part_time' | 'internship' | 'freelance'
 
 export interface Application {
   id: number
@@ -10,6 +11,9 @@ export interface Application {
   company: string
   url: string | null
   status: ApplicationStatus
+  employment_type: EmploymentType | null
+  salary_min: number | null
+  salary_max: number | null
   notes: string | null
   applied_date: string | null
   reminder_date: string | null
@@ -26,9 +30,33 @@ export interface ApplicationPayload {
   company: string
   url?: string
   status?: ApplicationStatus
+  employment_type?: EmploymentType | ''
+  salary_min?: number | null
+  salary_max?: number | null
   notes?: string
   applied_date?: string
   reminder_date?: string
+}
+
+type ApplicationWire = Omit<Application, 'employment_type' | 'salary_min' | 'salary_max'> & {
+  employment_type?: EmploymentType | null
+  salary_min?: number | string | null
+  salary_max?: number | string | null
+}
+
+function normalizeSalary(value: number | string | null | undefined): number | null {
+  if (value === null || value === undefined || value === '') return null
+  const parsed = typeof value === 'number' ? value : Number(value)
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : null
+}
+
+function normalizeApplication(application: ApplicationWire): Application {
+  return {
+    ...application,
+    employment_type: application.employment_type ?? null,
+    salary_min: normalizeSalary(application.salary_min),
+    salary_max: normalizeSalary(application.salary_max),
+  }
 }
 
 export function toApplicationPayload(
@@ -40,6 +68,9 @@ export function toApplicationPayload(
     company: application.company,
     url: application.url || '',
     status: application.status,
+    employment_type: application.employment_type || '',
+    salary_min: application.salary_min,
+    salary_max: application.salary_max,
     notes: application.notes || '',
     applied_date: toInputDate(application.applied_date),
     reminder_date: toInputDate(application.reminder_date),
@@ -48,17 +79,28 @@ export function toApplicationPayload(
 }
 
 export const applicationsApi = {
-  list: (params?: { status?: string; archived?: boolean }) =>
-    api.get<{ message: string; data: Application[] }>('/applications', { params }),
+  list: async (params?: { status?: string; archived?: boolean }) => {
+    const response = await api.get<{ message: string; data: ApplicationWire[] }>('/applications', { params })
+    return {
+      ...response,
+      data: { ...response.data, data: (response.data.data ?? []).map(normalizeApplication) },
+    }
+  },
 
-  show: (id: number) =>
-    api.get<{ message: string; data: Application }>(`/applications/${id}`),
+  show: async (id: number) => {
+    const response = await api.get<{ message: string; data: ApplicationWire }>(`/applications/${id}`)
+    return { ...response, data: { ...response.data, data: normalizeApplication(response.data.data) } }
+  },
 
-  create: (data: ApplicationPayload) =>
-    api.post<{ message: string; data: Application }>('/applications', data),
+  create: async (data: ApplicationPayload) => {
+    const response = await api.post<{ message: string; data: ApplicationWire }>('/applications', data)
+    return { ...response, data: { ...response.data, data: normalizeApplication(response.data.data) } }
+  },
 
-  update: (id: number, data: ApplicationPayload) =>
-    api.put<{ message: string; data: Application }>(`/applications/${id}`, data),
+  update: async (id: number, data: ApplicationPayload) => {
+    const response = await api.put<{ message: string; data: ApplicationWire }>(`/applications/${id}`, data)
+    return { ...response, data: { ...response.data, data: normalizeApplication(response.data.data) } }
+  },
 
   updatePosition: (id: number, position: number, status: ApplicationStatus) =>
     api.patch(`/applications/${id}/position`, { position, status }),

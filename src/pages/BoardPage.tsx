@@ -15,6 +15,7 @@ import { AlertTriangle, Plus, RefreshCw } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { toApplicationPayload, type Application, type ApplicationStatus } from '../api/applications'
 import ApplicationCard from '../components/board/ApplicationCard'
+import ApplicationCalendar from '../components/board/ApplicationCalendar'
 import ApplicationModal from '../components/board/ApplicationModal'
 import InterviewReminderPrompt from '../components/board/InterviewReminderPrompt'
 import KanbanColumn from '../components/board/KanbanColumn'
@@ -23,7 +24,6 @@ import { useMediaQuery } from '../hooks/useMediaQuery'
 import { useApplicationsStore } from '../store/applicationsStore'
 import { useRemindersStore } from '../store/remindersStore'
 import { getApiErrorData } from '../utils/apiError'
-import ConfirmDialog from '../components/ui/ConfirmDialog'
 
 const COLUMNS: { status: ApplicationStatus; label: string; color: string; collapsible?: boolean }[] = [
   { status: 'wishlist', label: 'Wishlist', color: 'bg-wishlist' },
@@ -56,8 +56,6 @@ export default function BoardPage() {
   const [reminderApp, setReminderApp] = useState<Application | null>(null)
   const [reminderSaving, setReminderSaving] = useState(false)
   const [reminderError, setReminderError] = useState<string | null>(null)
-  const [deletingApp, setDeletingApp] = useState<Application | null>(null)
-  const [deleteBusy, setDeleteBusy] = useState(false)
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -147,21 +145,18 @@ export default function BoardPage() {
     setModalOpen(true)
   }
 
-  const handleDelete = (id: number) => {
-    setDeletingApp(applications.find((application) => application.id === id) ?? null)
+  const openEditor = (application: Application) => {
+    setEditingApp(application)
+    setModalOpen(true)
   }
 
-  const confirmDelete = async () => {
-    if (!deletingApp) return
-    setDeleteBusy(true)
+  const handleDelete = async (id: number) => {
     try {
-      await deleteApplication(deletingApp.id)
-      setDeletingApp(null)
+      await deleteApplication(id)
       toast.success('Application deleted')
     } catch (deleteError: unknown) {
       toast.error(getApiErrorData(deleteError).message || 'We could not delete this application.')
-    } finally {
-      setDeleteBusy(false)
+      throw deleteError
     }
   }
 
@@ -171,6 +166,7 @@ export default function BoardPage() {
       toast.success('Application archived')
     } catch (archiveError: unknown) {
       toast.error(getApiErrorData(archiveError).message || 'We could not archive this application.')
+      throw archiveError
     }
   }
 
@@ -233,7 +229,6 @@ export default function BoardPage() {
     <>
       <header className="mb-5 flex items-center justify-between gap-4">
         <div>
-          <p className="mb-1 text-xs font-black uppercase tracking-[0.18em] text-dark/55">Application tracker</p>
           <h1 className="text-2xl font-black text-dark sm:text-3xl">Job Board</h1>
           <p className="mt-1 text-sm font-semibold text-gray-neo">{applications.length} application{applications.length === 1 ? '' : 's'} across your pipeline</p>
         </div>
@@ -241,6 +236,8 @@ export default function BoardPage() {
           <Plus size={18} strokeWidth={3} aria-hidden="true" /><span className="hidden sm:inline">Add application</span><span className="sm:hidden">Add</span>
         </button>
       </header>
+
+      <ApplicationCalendar applications={applications} onSelect={openEditor} />
 
       <nav className="-mx-4 mb-4 overflow-x-auto px-4 md:hidden" aria-label="Application status">
         <div className="flex min-w-max gap-2 pb-1">
@@ -263,16 +260,14 @@ export default function BoardPage() {
       </nav>
 
       <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-        <div className="flex w-full gap-4 overflow-x-auto pb-6 md:min-w-max">
+        <div className="flex w-full gap-3 overflow-x-auto pb-6 xl:gap-4">
           {visibleColumns.map((column) => (
             <KanbanColumn
               key={column.status}
               {...column}
               applications={getColumnApps(column.status)}
               onAdd={handleAdd}
-              onEdit={(application) => { setEditingApp(application); setModalOpen(true) }}
-              onDelete={handleDelete}
-              onArchive={handleArchive}
+              onEdit={openEditor}
               onSetReminder={openReminder}
               onMove={(application, status) => void moveApplication(application, status).catch((moveError: unknown) => toast.error(getApiErrorData(moveError).message || 'We could not move this application.'))}
               dragEnabled={isDesktop}
@@ -284,7 +279,7 @@ export default function BoardPage() {
         <DragOverlay>
           {activeApp && (
             <div className="w-[288px] rotate-2 opacity-95">
-              <ApplicationCard application={activeApp} onEdit={() => undefined} onDelete={() => undefined} onArchive={() => undefined} />
+              <ApplicationCard application={activeApp} onEdit={() => undefined} />
             </div>
           )}
         </DragOverlay>
@@ -294,6 +289,8 @@ export default function BoardPage() {
         open={modalOpen}
         onClose={() => { setModalOpen(false); setEditingApp(null) }}
         onSubmit={handleModalSubmit}
+        onArchive={handleArchive}
+        onDelete={handleDelete}
         initialData={editingApp}
         defaultStatus={defaultStatus}
       />
@@ -305,15 +302,6 @@ export default function BoardPage() {
         error={reminderError}
         onClose={() => setReminderApp(null)}
         onSave={handleSaveReminder}
-      />
-
-      <ConfirmDialog
-        open={!!deletingApp}
-        title="Delete application?"
-        description={deletingApp ? `${deletingApp.job_title} at ${deletingApp.company} will be permanently removed.` : ''}
-        busy={deleteBusy}
-        onCancel={() => setDeletingApp(null)}
-        onConfirm={confirmDelete}
       />
     </>
   )

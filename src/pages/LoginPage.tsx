@@ -116,9 +116,11 @@ export default function LoginPage() {
                 placeholder="john@example.com"
                 value={form.email}
                 onChange={handleChange}
+				aria-invalid={Boolean(errors.email)}
+				aria-describedby={errors.email ? 'login-email-error' : undefined}
                 className={`input-neo ${errors.email ? 'border-red-500' : ''}`}
               />
-              {errors.email && <p className="error-msg">{errors.email}</p>}
+			  {errors.email && <p id="login-email-error" className="error-msg" role="alert">{errors.email}</p>}
             </div>
 
             {/* Password */}
@@ -133,11 +135,16 @@ export default function LoginPage() {
                   placeholder="Your password"
                   value={form.password}
                   onChange={handleChange}
+				  aria-invalid={Boolean(errors.password)}
+				  aria-describedby={errors.password ? 'login-password-error' : undefined}
                   className={`input-neo pr-12 ${errors.password ? 'border-red-500' : ''}`}
                 />
                 <PasswordToggle show={showPassword} onClick={() => setShowPassword(!showPassword)} />
               </div>
-              {errors.password && <p className="error-msg">{errors.password}</p>}
+			  <div className="flex items-start justify-between gap-3">
+				{errors.password ? <p id="login-password-error" className="error-msg" role="alert">{errors.password}</p> : <span />}
+				<Link to="/forgot-password" className="mt-1 shrink-0 text-xs font-bold underline decoration-2 underline-offset-4">Forgot password?</Link>
+			  </div>
             </div>
 
             <label className="flex cursor-pointer items-center gap-3 text-sm font-bold text-dark">

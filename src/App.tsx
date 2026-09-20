@@ -14,6 +14,8 @@ const LoginPage = lazy(() => import('./pages/LoginPage'))
 const BoardPage = lazy(() => import('./pages/BoardPage'))
 const ArchivedPage = lazy(() => import('./pages/ArchivedPage'))
 const ProfilePage = lazy(() => import('./pages/ProfilePage'))
+const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage'))
+const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'))
 
 // ── Page transition wrapper ─────────────────────────────────
 function PageTransition({ children }: { children: React.ReactNode }) {
@@ -38,12 +40,14 @@ function AnimatedRoutes() {
       <Routes location={location} key={location.pathname}>
         {/* Public */}
         <Route path="/" element={<PageTransition><LandingPage /></PageTransition>} />
+        <Route path="/reset-password" element={<PageTransition><ResetPasswordPage /></PageTransition>} />
 
         {/* Guest only */}
         <Route element={<GuestRoute />}>
           <Route path="/register" element={<PageTransition><RegisterPage /></PageTransition>} />
           <Route path="/login" element={<PageTransition><LoginPage /></PageTransition>} />
           <Route path="/verify-email" element={<PageTransition><VerifyEmailPage /></PageTransition>} />
+          <Route path="/forgot-password" element={<PageTransition><ForgotPasswordPage /></PageTransition>} />
         </Route>
 
         {/* Protected — dengan layout navbar */}

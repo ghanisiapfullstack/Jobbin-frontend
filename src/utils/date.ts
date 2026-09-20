@@ -24,11 +24,21 @@ export function formatDate(date: string | null | undefined): string {
  */
 export function toInputDate(date: string | null | undefined): string {
   if (!date) return ''
+  const dateOnly = date.match(/^\d{4}-\d{2}-\d{2}/)?.[0]
+  if (dateOnly) return dateOnly
   try {
     return new Date(date).toISOString().split('T')[0]
   } catch {
     return ''
   }
+}
+
+export function parseDateOnly(date: string | null | undefined): Date | null {
+  const input = toInputDate(date)
+  const match = input.match(/^(\d{4})-(\d{2})-(\d{2})$/)
+  if (!match) return null
+  const parsed = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]), 12)
+  return Number.isNaN(parsed.getTime()) ? null : parsed
 }
 
 export function toLocalDateInput(date: Date): string {
