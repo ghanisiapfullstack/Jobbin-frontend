@@ -19,6 +19,8 @@ export interface User {
   avatar?: string | null
   email_verified_at: string | null
   created_at: string
+  has_password?: boolean
+  auth_methods?: Array<'password' | 'google'>
 }
 
 export const authApi = {
@@ -28,6 +30,10 @@ export const authApi = {
     api.post('/auth/verify-email', { token }),
   resendVerification: (email: string) =>
     api.post('/auth/resend-verification', { email }),
+  forgotPassword: (email: string) =>
+    api.post<{ message: string }>('/auth/forgot-password', { email }),
+  resetPassword: (token: string, password: string) =>
+    api.post<{ message: string }>('/auth/reset-password', { token, password }),
   login: (data: LoginPayload) =>
     api.post<{ message: string; data: { token: string; user: User } }>('/auth/login', data),
   googleAuth: (credential: string, rememberMe = false) =>

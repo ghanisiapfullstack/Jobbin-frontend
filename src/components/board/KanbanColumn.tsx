@@ -8,8 +8,6 @@ import ApplicationCard from './ApplicationCard'
 
 interface CardActions {
   onEdit: (app: Application) => void
-  onDelete: (id: number) => void
-  onArchive: (id: number) => void
   onSetReminder: (app: Application) => void
   onMove: (app: Application, status: ApplicationStatus) => void
 }
@@ -20,7 +18,7 @@ interface SortableCardProps extends CardActions {
 }
 
 function SortableCard({ application, dragEnabled, ...actions }: SortableCardProps) {
-  const { attributes, listeners, setActivatorNodeRef, setNodeRef, transform, transition, isDragging } = useSortable({
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: application.id,
     data: { application },
     disabled: !dragEnabled,
@@ -30,23 +28,20 @@ function SortableCard({ application, dragEnabled, ...actions }: SortableCardProp
     <div
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.45 : 1 }}
-      onPointerDown={dragEnabled ? (event) => listeners?.onPointerDown?.(event) : undefined}
-      className={dragEnabled ? 'cursor-grab active:cursor-grabbing' : undefined}
+      {...(dragEnabled ? attributes : {})}
+      {...(dragEnabled ? listeners : {})}
+      className={dragEnabled ? 'group cursor-grab touch-none select-none active:cursor-grabbing' : undefined}
     >
       <ApplicationCard
         application={application}
         {...actions}
         dragHandle={dragEnabled ? (
-          <button
-            ref={setActivatorNodeRef}
-            type="button"
-            {...attributes}
-            onKeyDown={(event) => listeners?.onKeyDown?.(event)}
-            className="hidden h-9 w-8 shrink-0 cursor-grab items-center justify-center border-2 border-transparent text-dark/45 hover:border-dark hover:bg-primary hover:text-dark active:cursor-grabbing md:flex"
-            aria-label={`Drag ${application.job_title}`}
+          <span
+            className="hidden h-9 w-8 shrink-0 items-center justify-center border-2 border-transparent text-dark/45 transition-colors group-hover:border-dark group-hover:bg-primary group-hover:text-dark md:flex"
+            aria-hidden="true"
           >
             <GripVertical size={18} aria-hidden="true" />
-          </button>
+          </span>
         ) : undefined}
       />
     </div>
@@ -71,8 +66,6 @@ export default function KanbanColumn({
   onAdd,
   dragEnabled,
   onEdit,
-  onDelete,
-  onArchive,
   onSetReminder,
   onMove,
   collapsible = false,
@@ -81,7 +74,7 @@ export default function KanbanColumn({
   const { setNodeRef, isOver } = useDroppable({ id: status })
 
   return (
-    <section className="flex w-full min-w-0 flex-col md:w-[288px] md:min-w-[288px]" aria-labelledby={`column-${status}`}>
+    <section className="flex w-full min-w-0 flex-col md:w-[clamp(256px,19vw,288px)] md:min-w-[256px]" aria-labelledby={`column-${status}`}>
       <div className={`relative mb-2 flex min-h-12 items-center justify-between border-2 border-dark px-3 shadow-neo-sm ${color}`}>
         <div className="flex min-w-0 items-center gap-2">
           {collapsible && (
@@ -120,8 +113,6 @@ export default function KanbanColumn({
                 application={application}
                 dragEnabled={dragEnabled}
                 onEdit={onEdit}
-                onDelete={onDelete}
-                onArchive={onArchive}
                 onSetReminder={onSetReminder}
                 onMove={onMove}
               />

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore'
 import { authApi } from '../api/auth'
@@ -18,6 +18,18 @@ export default function Navbar() {
   const navigate = useNavigate()
   const location = useLocation()
   const [menuOpen, setMenuOpen] = useState(false)
+  const menuButtonRef = useRef<HTMLButtonElement>(null)
+
+  useEffect(() => {
+    if (!menuOpen) return undefined
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return
+      setMenuOpen(false)
+      menuButtonRef.current?.focus()
+    }
+    document.addEventListener('keydown', closeOnEscape)
+    return () => document.removeEventListener('keydown', closeOnEscape)
+  }, [menuOpen])
 
   const handleLogout = async () => {
     try {
@@ -58,6 +70,7 @@ export default function Navbar() {
         <div className="flex items-center gap-2">
           <ReminderBell />
           <button
+            ref={menuButtonRef}
             onClick={handleLogout}
             className="hidden md:inline-flex btn-outline text-xs px-3 py-1.5"
           >
@@ -70,6 +83,7 @@ export default function Navbar() {
             className="md:hidden icon-button shadow-neo-sm"
             aria-label="Toggle menu"
             aria-expanded={menuOpen}
+            aria-controls="mobile-navigation"
           >
             {menuOpen ? <X size={20} strokeWidth={3} /> : <Menu size={20} strokeWidth={3} />}
           </button>
@@ -78,7 +92,7 @@ export default function Navbar() {
 
       {/* Mobile menu */}
       {menuOpen && (
-        <div className="md:hidden border-t-2 border-dark bg-primary">
+        <div id="mobile-navigation" className="md:hidden border-t-2 border-dark bg-primary">
           {NAV_LINKS.map(({ to, label }) => (
             <Link
               key={to}

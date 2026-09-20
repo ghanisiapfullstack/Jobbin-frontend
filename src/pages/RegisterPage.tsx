@@ -33,7 +33,7 @@ export default function RegisterPage() {
     if (!form.name.trim()) newErrors.name = 'Enter your full name.'
     if (!form.email.trim()) newErrors.email = 'Enter your email address.'
     if (!form.password) newErrors.password = 'Create a password.'
-    else if (form.password.length < 6) newErrors.password = 'Use at least 6 characters.'
+    else if (form.password.length < 8) newErrors.password = 'Use at least 8 characters.'
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors)
       return
@@ -58,7 +58,7 @@ export default function RegisterPage() {
   }
 
   const passwordLength = form.password.length
-  const passwordStrength = passwordLength === 0 ? null : passwordLength < 6 ? 'weak' : passwordLength < 10 ? 'medium' : 'strong'
+  const passwordStrength = passwordLength === 0 ? null : passwordLength < 8 ? 'weak' : passwordLength < 12 ? 'medium' : 'strong'
 
   return (
     <div className="min-h-screen bg-primary flex items-center justify-center px-4 py-8 sm:py-12">
@@ -82,9 +82,11 @@ export default function RegisterPage() {
                 placeholder="John Doe"
                 value={form.name}
                 onChange={handleChange}
+                aria-invalid={Boolean(errors.name)}
+                aria-describedby={errors.name ? 'register-name-error' : undefined}
                 className={`input-neo ${errors.name ? 'border-red-500' : ''}`}
               />
-              {errors.name && <p className="error-msg">{errors.name}</p>}
+              {errors.name && <p id="register-name-error" className="error-msg" role="alert">{errors.name}</p>}
             </div>
 
             {/* Email */}
@@ -98,9 +100,11 @@ export default function RegisterPage() {
                 placeholder="john@example.com"
                 value={form.email}
                 onChange={handleChange}
+                aria-invalid={Boolean(errors.email)}
+                aria-describedby={errors.email ? 'register-email-error' : undefined}
                 className={`input-neo ${errors.email ? 'border-red-500' : ''}`}
               />
-              {errors.email && <p className="error-msg">{errors.email}</p>}
+              {errors.email && <p id="register-email-error" className="error-msg" role="alert">{errors.email}</p>}
             </div>
 
             {/* Password */}
@@ -112,9 +116,11 @@ export default function RegisterPage() {
                   name="password"
                   type={showPassword ? 'text' : 'password'}
                   autoComplete="new-password"
-                  placeholder="Min. 6 characters"
+                  placeholder="Min. 8 characters"
                   value={form.password}
                   onChange={handleChange}
+                  aria-invalid={Boolean(errors.password)}
+                  aria-describedby={errors.password ? 'register-password-error' : 'register-password-strength'}
                   className={`input-neo pr-12 ${errors.password ? 'border-red-500' : ''}`}
                 />
                 <PasswordToggle show={showPassword} onClick={() => setShowPassword(!showPassword)} />
@@ -136,18 +142,18 @@ export default function RegisterPage() {
                       />
                     ))}
                   </div>
-                  <p className={`text-xs font-semibold ${
+                  <p id="register-password-strength" className={`text-xs font-semibold ${
                     passwordStrength === 'weak' ? 'text-red-500' :
                     passwordStrength === 'medium' ? 'text-yellow-600' :
                     'text-green-600'
                   }`}>
-                    {passwordStrength === 'weak' ? `Too short — ${6 - passwordLength} more character${6 - passwordLength > 1 ? 's' : ''} needed` :
+                    {passwordStrength === 'weak' ? `Too short — ${8 - passwordLength} more character${8 - passwordLength > 1 ? 's' : ''} needed` :
                      passwordStrength === 'medium' ? 'Good password' :
                      'Strong password ✓'}
                   </p>
                 </div>
               )}
-              {errors.password && <p className="error-msg">{errors.password}</p>}
+              {errors.password && <p id="register-password-error" className="error-msg" role="alert">{errors.password}</p>}
             </div>
 
             <button
