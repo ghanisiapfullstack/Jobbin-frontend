@@ -10,6 +10,7 @@ import { Menu, X } from 'lucide-react'
 const NAV_LINKS = [
   { to: '/board', label: 'Board' },
   { to: '/archived', label: 'Archived' },
+  { to: '/about', label: 'Tentang Developer' },
   { to: '/profile', label: 'Profile' },
 ]
 

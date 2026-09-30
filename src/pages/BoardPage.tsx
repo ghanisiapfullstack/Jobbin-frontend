@@ -20,7 +20,9 @@ import ApplicationModal from '../components/board/ApplicationModal'
 import InterviewReminderPrompt from '../components/board/InterviewReminderPrompt'
 import KanbanColumn from '../components/board/KanbanColumn'
 import { ColumnSkeleton } from '../components/board/Skeleton'
+import WakingUpNotice from '../components/ui/WakingUpNotice'
 import { useMediaQuery } from '../hooks/useMediaQuery'
+import { useSlowLoading } from '../hooks/useSlowLoading'
 import { useApplicationsStore } from '../store/applicationsStore'
 import { useRemindersStore } from '../store/remindersStore'
 import { getApiErrorData } from '../utils/apiError'
@@ -47,6 +49,7 @@ export default function BoardPage() {
   } = useApplicationsStore()
   const fetchReminders = useRemindersStore((state) => state.fetchReminders)
   const isDesktop = useMediaQuery('(min-width: 768px)')
+  const showWakingUp = useSlowLoading(loading && applications.length === 0, 3500)
 
   const [activeApp, setActiveApp] = useState<Application | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
@@ -206,6 +209,7 @@ export default function BoardPage() {
           <div className="h-11 w-40 animate-pulse bg-dark/10" />
         </div>
         <div className="flex gap-4 overflow-hidden">{[1, 2, 3, 4, 5].map((item) => <ColumnSkeleton key={item} />)}</div>
+        {showWakingUp && <WakingUpNotice className="mt-6" />}
       </div>
     )
   }

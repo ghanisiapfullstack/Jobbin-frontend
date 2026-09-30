@@ -16,6 +16,7 @@ const ArchivedPage = lazy(() => import('./pages/ArchivedPage'))
 const ProfilePage = lazy(() => import('./pages/ProfilePage'))
 const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage'))
 const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'))
+const CreatorPage = lazy(() => import('./pages/CreatorPage'))
 
 // ── Page transition wrapper ─────────────────────────────────
 function PageTransition({ children }: { children: React.ReactNode }) {
@@ -40,6 +41,7 @@ function AnimatedRoutes() {
       <Routes location={location} key={location.pathname}>
         {/* Public */}
         <Route path="/" element={<PageTransition><LandingPage /></PageTransition>} />
+        <Route path="/about" element={<PageTransition><CreatorPage /></PageTransition>} />
         <Route path="/reset-password" element={<PageTransition><ResetPasswordPage /></PageTransition>} />
 
         {/* Guest only */}
