@@ -4,9 +4,11 @@ import {
   DragOverlay,
   KeyboardSensor,
   PointerSensor,
-  closestCorners,
+  pointerWithin,
+  rectIntersection,
   useSensor,
   useSensors,
+  type CollisionDetection,
   type DragEndEvent,
   type DragStartEvent,
 } from '@dnd-kit/core'
@@ -34,6 +36,18 @@ const COLUMNS: { status: ApplicationStatus; label: string; color: string; collap
   { status: 'offer', label: 'Offer', color: 'bg-offer' },
   { status: 'rejected', label: 'Rejected', color: 'bg-rejected', collapsible: true },
 ]
+
+// Kanban columns differ a lot in height (an empty column vs one with many
+// cards), which makes closestCorners pick the wrong target — it only ever
+// resolved to columns whose corners happened to be near the pointer (e.g. the
+// right-most Offer/Rejected). pointerWithin resolves the droppable actually
+// under the cursor; rectIntersection is a fallback for when the pointer is
+// between droppables (e.g. the gap over a shorter column).
+const boardCollisionDetection: CollisionDetection = (args) => {
+  const pointerCollisions = pointerWithin(args)
+  if (pointerCollisions.length > 0) return pointerCollisions
+  return rectIntersection(args)
+}
 
 export default function BoardPage() {
   const {
@@ -263,7 +277,7 @@ export default function BoardPage() {
         </div>
       </nav>
 
-      <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+      <DndContext sensors={sensors} collisionDetection={boardCollisionDetection} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
         <div className="flex w-full gap-3 overflow-x-auto pb-6 xl:gap-4">
           {visibleColumns.map((column) => (
             <KanbanColumn
