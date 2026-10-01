@@ -1,20 +1,26 @@
 import { Link } from 'react-router-dom'
 import { ArrowLeft, Coffee, ExternalLink } from 'lucide-react'
 import JobbinLogo from '../components/ui/JobbinLogo'
+import { useAuthStore } from '../store/authStore'
 
 const SAWERIA_URL = 'https://saweria.co/ghanifabihaziq'
 
 export default function CreatorPage() {
+  const user = useAuthStore((state) => state.user)
+  // Return to the board when signed in, otherwise to the public landing page.
+  const backTo = user ? '/board' : '/'
+  const backLabel = user ? 'Kembali ke board' : 'Kembali ke beranda'
+
   return (
     <div className="min-h-screen bg-bg-neo text-dark">
       {/* Top bar */}
       <header className="sticky top-0 z-40 border-b-3 border-dark bg-primary">
         <div className="mx-auto flex h-14 max-w-screen-md items-center justify-between px-4">
-          <Link to="/" className="shrink-0" aria-label="Kembali ke beranda Jobbin">
+          <Link to={backTo} className="shrink-0" aria-label={backLabel}>
             <JobbinLogo size="sm" />
           </Link>
           <Link
-            to="/"
+            to={backTo}
             className="inline-flex items-center gap-1.5 border-2 border-dark bg-white px-3 py-1.5 text-xs font-black shadow-neo-sm transition-transform hover:-translate-y-0.5"
           >
             <ArrowLeft size={15} strokeWidth={3} aria-hidden="true" /> Kembali
