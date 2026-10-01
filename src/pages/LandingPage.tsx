@@ -1,6 +1,7 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, type Variants } from 'framer-motion'
-import { LayoutDashboard, BellRing, Archive, ArrowRight, Check, MoveRight } from 'lucide-react'
+import { LayoutDashboard, BellRing, Archive, ArrowRight, Check, MoveRight, Play } from 'lucide-react'
 import JobbinLogo from '../components/ui/JobbinLogo'
 
 // ── Animation variants ──────────────────────────────────────
@@ -89,6 +90,40 @@ const STEPS = [
   { step: '02', title: 'Add your applications', desc: 'Add jobs you have applied to or plan to apply. Set reminders for follow-ups.' },
   { step: '03', title: 'Track your progress', desc: 'Move cards across columns as you progress. Get email reminders on time.' },
 ]
+
+// ── Demo video (click to play, with sound) ─────────────────
+function DemoVideo() {
+  const [playing, setPlaying] = useState(false)
+
+  return (
+    <div className="relative border-3 border-dark shadow-neo-lg bg-dark overflow-hidden aspect-video">
+      {playing ? (
+        <video
+          src="/jobbin-demo.mp4"
+          poster="/jobbin-demo-poster.png"
+          controls
+          autoPlay
+          playsInline
+          className="h-full w-full"
+        />
+      ) : (
+        <button
+          type="button"
+          onClick={() => setPlaying(true)}
+          className="group relative h-full w-full"
+          aria-label="Putar video demo Jobbin"
+        >
+          <img src="/jobbin-demo-poster.png" alt="Demo Jobbin" className="h-full w-full object-cover" />
+          <span className="absolute inset-0 flex items-center justify-center bg-dark/20 transition-colors group-hover:bg-dark/10">
+            <span className="flex h-16 w-16 items-center justify-center border-3 border-dark bg-primary shadow-neo transition-transform group-hover:scale-110">
+              <Play size={26} strokeWidth={3} className="ml-1 text-dark" aria-hidden="true" />
+            </span>
+          </span>
+        </button>
+      )}
+    </div>
+  )
+}
 
 // ── Component ───────────────────────────────────────────────
 export default function LandingPage() {
@@ -258,6 +293,31 @@ export default function LandingPage() {
               </motion.div>
             ))}
           </div>
+        </motion.div>
+      </section>
+
+      {/* ── Demo video ─────────────────────────────────────── */}
+      <section className="max-w-screen-xl mx-auto px-6 pb-8">
+        <motion.div
+          variants={fadeUp}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true }}
+          className="text-center mb-8"
+        >
+          <span className="text-xs font-black text-dark/30 tracking-widest uppercase">See it in action</span>
+          <h2 className="text-3xl sm:text-4xl font-black text-dark mt-2">
+            Watch Jobbin in 30 seconds.
+          </h2>
+        </motion.div>
+        <motion.div
+          variants={fadeIn}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true }}
+          className="max-w-3xl mx-auto"
+        >
+          <DemoVideo />
         </motion.div>
       </section>
 
