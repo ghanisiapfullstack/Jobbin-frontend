@@ -6,6 +6,7 @@ import { ProtectedRoute, GuestRoute } from './components/RouteGuard'
 import AppLayout from './components/AppLayout'
 import SplashScreen from './pages/SplashScreen'
 import { useAuthStore } from './store/authStore'
+import { initAnalytics, trackPageView } from './utils/analytics'
 
 const LandingPage = lazy(() => import('./pages/LandingPage'))
 const RegisterPage = lazy(() => import('./pages/RegisterPage'))
@@ -35,6 +36,10 @@ function PageTransition({ children }: { children: React.ReactNode }) {
 // ── Animated routes — perlu useLocation di dalam BrowserRouter ──
 function AnimatedRoutes() {
   const location = useLocation()
+
+  useEffect(() => {
+    trackPageView(location.pathname)
+  }, [location.pathname])
 
   return (
     <AnimatePresence mode="wait">
@@ -73,6 +78,7 @@ export default function App() {
   const initialize = useAuthStore((state) => state.initialize)
 
   useEffect(() => {
+    initAnalytics()
     void initialize()
   }, [initialize])
 
