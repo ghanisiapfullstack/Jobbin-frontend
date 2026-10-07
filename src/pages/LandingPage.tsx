@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom'
 import { motion, type Variants } from 'framer-motion'
 import { LayoutDashboard, BellRing, Archive, ArrowRight, Check, MoveRight, Play } from 'lucide-react'
 import JobbinLogo from '../components/ui/JobbinLogo'
-import ThemeToggle from '../components/ui/ThemeToggle'
 
 // ── Animation variants ──────────────────────────────────────
 const fadeUp: Variants = {
@@ -143,7 +142,6 @@ export default function LandingPage() {
         <div className="max-w-screen-xl mx-auto px-6 h-14 flex items-center justify-between">
           <JobbinLogo size="sm" />
           <div className="flex items-center gap-2">
-            <ThemeToggle />
             <button
               onClick={() => handleNav('/login')}
               className="btn-outline text-sm px-4 py-1.5"
