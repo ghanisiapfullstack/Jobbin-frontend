@@ -33,10 +33,23 @@
     <meta name="twitter:image" content="https://www.jobbin.site/og-image.png" />
 
     <!-- Theme -->
-    <meta name="theme-color" content="#FFD600" />
+    <meta name="theme-color" content="#E8C310" />
   </head>
   <body>
     <div id="root"></div>
+    <script>
+      // Apply the saved theme before React renders to avoid a flash of the
+      // wrong theme. Falls back to the OS preference when unset.
+      (function () {
+        try {
+          var t = localStorage.getItem('jobbin_theme');
+          if (t !== 'light' && t !== 'dark') {
+            t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+          }
+          if (t === 'dark') document.documentElement.classList.add('dark');
+        } catch (e) { /* ignore */ }
+      })();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

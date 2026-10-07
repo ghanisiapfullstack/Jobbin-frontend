@@ -30,15 +30,15 @@ export default function JobbinLogo({
           y="3"
           width="38"
           height="38"
-          fill={inverse ? '#FFD600' : '#1a1a1a'}
-          stroke={inverse ? '#FFD600' : '#1a1a1a'}
+          fill={inverse ? '#E8C310' : '#1a1a1a'}
+          stroke={inverse ? '#E8C310' : '#1a1a1a'}
           strokeWidth="4"
         />
         <path
           d="M29.5 12v17.5c0 6.2-3.7 9.5-9.5 9.5-4.4 0-7.6-2.2-9-6.2l6.1-2.3c.6 1.8 1.5 2.8 3 2.8 1.8 0 2.8-1.2 2.8-3.8V18h-6v-6h12.6Z"
-          fill={inverse ? '#1a1a1a' : '#FFD600'}
+          fill={inverse ? '#1a1a1a' : '#E8C310'}
         />
-        <path d="M38 7v8M34 11h8" stroke={inverse ? '#1a1a1a' : '#FFD600'} strokeWidth="2.5" />
+        <path d="M38 7v8M34 11h8" stroke={inverse ? '#1a1a1a' : '#E8C310'} strokeWidth="2.5" />
       </svg>
       {!compact && (
         <span className={`font-black tracking-[-0.03em] ${

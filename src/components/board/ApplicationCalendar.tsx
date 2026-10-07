@@ -144,13 +144,13 @@ export default function ApplicationCalendar({ applications, onSelect }: Props) {
 
   return (
     <section className="mb-8 border-2 border-dark bg-white shadow-neo" aria-labelledby="application-calendar-title">
-      <div className="flex flex-col gap-3 border-b-2 border-dark bg-primary px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 border-b-2 border-dark bg-primary px-4 py-3 text-[#1a1a1a] sm:flex-row sm:items-center sm:justify-between">
         <div ref={pickerRef} className="relative flex items-center gap-2">
           <h2 id="application-calendar-title" className="text-lg font-black">
             <button
               type="button"
               onClick={togglePicker}
-              className="flex min-h-11 items-center gap-2 border-2 border-transparent px-1.5 text-left hover:border-dark hover:bg-white/45"
+              className="flex min-h-11 items-center gap-2 border-2 border-transparent px-1.5 text-left hover:border-[#1a1a1a] hover:bg-white/45"
               aria-haspopup="true"
               aria-expanded={pickerOpen}
               aria-controls="calendar-month-picker"
@@ -160,7 +160,7 @@ export default function ApplicationCalendar({ applications, onSelect }: Props) {
               <ChevronDown size={17} strokeWidth={3} className={`transition-transform ${pickerOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
             </button>
           </h2>
-          <span className="border border-dark bg-white px-2 py-0.5 text-xs font-black">{monthReminders.length}</span>
+          <span className="border border-[#1a1a1a] bg-[#ffffff] px-2 py-0.5 text-xs font-black">{monthReminders.length}</span>
 
           {pickerOpen && (
             <div
@@ -198,15 +198,15 @@ export default function ApplicationCalendar({ applications, onSelect }: Props) {
             </div>
           )}
         </div>
-        <div className="flex items-center gap-2" aria-label="Calendar navigation">
-          <button type="button" onClick={toggleCalendar} className="hidden min-h-9 items-center gap-1.5 border-2 border-dark bg-white px-3 text-xs font-black hover:bg-bg-neo md:inline-flex" aria-expanded={calendarExpanded} aria-controls="desktop-calendar-grid">
+        <div className="flex items-center gap-2 text-[#1a1a1a]" aria-label="Calendar navigation">
+          <button type="button" onClick={toggleCalendar} className="hidden min-h-9 items-center gap-1.5 border-2 border-[#1a1a1a] bg-[#ffffff] px-3 text-xs font-black text-[#1a1a1a] hover:bg-[#1a1a1a]/10 md:inline-flex" aria-expanded={calendarExpanded} aria-controls="desktop-calendar-grid">
             <Rows3 size={15} strokeWidth={3} aria-hidden="true" /> {calendarExpanded ? 'Compact' : 'Full month'}
           </button>
-          <button type="button" onClick={() => changeMonth(-1)} className="icon-button h-9 w-9 shadow-none hover:bg-white/60" aria-label="Previous month">
+          <button type="button" onClick={() => changeMonth(-1)} className="inline-flex h-9 w-9 items-center justify-center border-2 border-[#1a1a1a] bg-[#ffffff] text-[#1a1a1a] hover:bg-[#1a1a1a]/10" aria-label="Previous month">
             <ChevronLeft size={19} strokeWidth={3} aria-hidden="true" />
           </button>
-          <button type="button" onClick={resetToday} className="min-h-9 border-2 border-dark bg-white px-3 text-xs font-black hover:bg-bg-neo">Today</button>
-          <button type="button" onClick={() => changeMonth(1)} className="icon-button h-9 w-9 shadow-none hover:bg-white/60" aria-label="Next month">
+          <button type="button" onClick={resetToday} className="min-h-9 border-2 border-[#1a1a1a] bg-[#ffffff] px-3 text-xs font-black text-[#1a1a1a] hover:bg-[#1a1a1a]/10">Today</button>
+          <button type="button" onClick={() => changeMonth(1)} className="inline-flex h-9 w-9 items-center justify-center border-2 border-[#1a1a1a] bg-[#ffffff] text-[#1a1a1a] hover:bg-[#1a1a1a]/10" aria-label="Next month">
             <ChevronRight size={19} strokeWidth={3} aria-hidden="true" />
           </button>
         </div>

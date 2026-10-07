@@ -5,6 +5,7 @@ import { authApi } from '../api/auth'
 import toast from 'react-hot-toast'
 import ReminderBell from './ReminderBell'
 import JobbinLogo from './ui/JobbinLogo'
+import ThemeToggle from './ui/ThemeToggle'
 import { Menu, X } from 'lucide-react'
 
 const NAV_LINKS = [
@@ -43,7 +44,7 @@ export default function Navbar() {
   }
 
   return (
-    <header className="bg-primary border-b-3 border-dark sticky top-0 z-40">
+    <header className="bg-primary border-b-3 border-[#1a1a1a] sticky top-0 z-40">
       <div className="max-w-screen-xl mx-auto px-4 h-14 flex items-center justify-between">
         {/* Logo */}
         <Link to="/board" className="shrink-0" aria-label="Jobbin board">
@@ -58,8 +59,8 @@ export default function Navbar() {
               to={to}
               className={`px-3 py-1.5 text-sm font-bold border-2 transition-all ${
                 location.pathname === to
-                  ? 'border-dark bg-dark text-primary shadow-neo-sm'
-                  : 'border-transparent text-dark hover:border-dark'
+                  ? 'border-[#1a1a1a] bg-[#1a1a1a] text-[#E8C310] shadow-neo-sm'
+                  : 'border-transparent text-[#1a1a1a] hover:border-[#1a1a1a]'
               }`}
             >
               {to === '/profile' ? (user?.name?.split(' ')[0] || label) : label}
@@ -69,6 +70,7 @@ export default function Navbar() {
 
         {/* Right side */}
         <div className="flex items-center gap-2">
+          <ThemeToggle />
           <ReminderBell />
           <button
             ref={menuButtonRef}
@@ -93,14 +95,14 @@ export default function Navbar() {
 
       {/* Mobile menu */}
       {menuOpen && (
-        <div id="mobile-navigation" className="md:hidden border-t-2 border-dark bg-primary">
+        <div id="mobile-navigation" className="md:hidden border-t-2 border-[#1a1a1a] bg-primary">
           {NAV_LINKS.map(({ to, label }) => (
             <Link
               key={to}
               to={to}
               onClick={() => setMenuOpen(false)}
-              className={`block px-4 py-3 text-sm font-bold border-b border-dark/20 ${
-                location.pathname === to ? 'bg-dark text-primary' : 'text-dark hover:bg-dark/10'
+              className={`block px-4 py-3 text-sm font-bold border-b border-[#1a1a1a]/20 ${
+                location.pathname === to ? 'bg-[#1a1a1a] text-[#E8C310]' : 'text-[#1a1a1a] hover:bg-[#1a1a1a]/10'
               }`}
             >
               {to === '/profile' ? (user?.name?.split(' ')[0] || label) : label}
@@ -108,7 +110,7 @@ export default function Navbar() {
           ))}
           <button
             onClick={handleLogout}
-            className="w-full text-left px-4 py-3 text-sm font-bold text-dark hover:bg-dark/10"
+            className="w-full text-left px-4 py-3 text-sm font-bold text-[#1a1a1a] hover:bg-[#1a1a1a]/10"
           >
             Logout
           </button>
