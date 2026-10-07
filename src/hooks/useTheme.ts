@@ -4,34 +4,32 @@ type Theme = 'light' | 'dark'
 
 const STORAGE_KEY = 'jobbin_theme'
 
-function getInitialTheme(): Theme {
+function readStoredTheme(): Theme {
   if (typeof window === 'undefined') return 'light'
   const stored = localStorage.getItem(STORAGE_KEY)
   if (stored === 'light' || stored === 'dark') return stored
-  // Fall back to the OS preference when the user has not chosen yet.
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
 }
 
-function applyTheme(theme: Theme) {
-  const root = document.documentElement
-  root.classList.toggle('dark', theme === 'dark')
+/** Apply/remove the dark class on <html>. Used only inside the app area so the
+ *  landing and auth pages always stay light. */
+function setDarkClass(enabled: boolean) {
+  document.documentElement.classList.toggle('dark', enabled)
 }
 
 /**
- * Theme state backed by localStorage. Applies the `dark` class on <html> so
- * CSS variables (and therefore all neobrutalism tokens) switch instantly.
+ * Theme state for the app area. Reads/writes the preference in localStorage and
+ * applies the `dark` class while mounted, then clears it on unmount so pages
+ * outside the app area (landing, auth) always render light.
  */
 export function useTheme() {
-  const [theme, setThemeState] = useState<Theme>(getInitialTheme)
+  const [theme, setThemeState] = useState<Theme>(readStoredTheme)
 
+  // Apply while mounted; clear on unmount (leaving the app area).
   useEffect(() => {
-    applyTheme(theme)
+    setDarkClass(theme === 'dark')
+    return () => setDarkClass(false)
   }, [theme])
-
-  const setTheme = useCallback((next: Theme) => {
-    localStorage.setItem(STORAGE_KEY, next)
-    setThemeState(next)
-  }, [])
 
   const toggleTheme = useCallback(() => {
     setThemeState((current) => {
@@ -41,5 +39,5 @@ export function useTheme() {
     })
   }, [])
 
-  return { theme, setTheme, toggleTheme }
+  return { theme, toggleTheme }
 }
