@@ -13,12 +13,13 @@ import {
   type DragStartEvent,
 } from '@dnd-kit/core'
 import { arrayMove, sortableKeyboardCoordinates } from '@dnd-kit/sortable'
-import { AlertTriangle, Plus, RefreshCw } from 'lucide-react'
+import { AlertTriangle, HelpCircle, Plus, RefreshCw } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { toApplicationPayload, type Application, type ApplicationStatus } from '../api/applications'
 import ApplicationCard from '../components/board/ApplicationCard'
 import ApplicationCalendar from '../components/board/ApplicationCalendar'
 import ApplicationModal from '../components/board/ApplicationModal'
+import BoardTour from '../components/board/BoardTour'
 import InterviewReminderPrompt from '../components/board/InterviewReminderPrompt'
 import KanbanColumn from '../components/board/KanbanColumn'
 import { ColumnSkeleton } from '../components/board/Skeleton'
@@ -72,6 +73,7 @@ export default function BoardPage() {
   const [mobileStatus, setMobileStatus] = useState<ApplicationStatus>('wishlist')
   const [reminderApp, setReminderApp] = useState<Application | null>(null)
   const [reminderSaving, setReminderSaving] = useState(false)
+  const [tourSignal, setTourSignal] = useState(0)
   const [reminderError, setReminderError] = useState<string | null>(null)
 
   const sensors = useSensors(
@@ -250,12 +252,40 @@ export default function BoardPage() {
           <h1 className="text-2xl font-black text-dark sm:text-3xl">Job Board</h1>
           <p className="mt-1 text-sm font-semibold text-gray-neo">{applications.length} application{applications.length === 1 ? '' : 's'} across your pipeline</p>
         </div>
-        <button type="button" onClick={() => handleAdd(isDesktop ? 'wishlist' : mobileStatus)} className="btn-primary shrink-0 px-3 sm:px-5">
-          <Plus size={18} strokeWidth={3} aria-hidden="true" /><span className="hidden sm:inline">Add application</span><span className="sm:hidden">Add</span>
-        </button>
+        <div className="flex shrink-0 items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setTourSignal((value) => value + 1)}
+            className="hidden min-h-9 items-center gap-1.5 border-2 border-dark bg-white px-3 text-xs font-black hover:bg-bg-neo sm:inline-flex"
+          >
+            <HelpCircle size={15} strokeWidth={3} aria-hidden="true" /> Tutorial
+          </button>
+          <button type="button" data-tour="add-application" onClick={() => handleAdd(isDesktop ? 'wishlist' : mobileStatus)} className="btn-primary px-3 sm:px-5">
+            <Plus size={18} strokeWidth={3} aria-hidden="true" /><span className="hidden sm:inline">Add application</span><span className="sm:hidden">Add</span>
+          </button>
+        </div>
       </header>
 
-      <ApplicationCalendar applications={applications} onSelect={openEditor} />
+      <div data-tour="calendar">
+        <ApplicationCalendar applications={applications} onSelect={openEditor} />
+      </div>
+
+      {applications.length === 0 && (
+        <div className="mb-4 border-2 border-dark bg-primary p-5 shadow-neo">
+          <h2 className="text-lg font-black">Mulai lacak lamaran pertamamu</h2>
+          <p className="mt-1 text-sm font-semibold text-dark/75">
+            Papan ini masih kosong. Klik Add application untuk menambahkan lamaran,
+            lalu geser kartunya antar kolom saat statusnya berubah.
+          </p>
+          <button
+            type="button"
+            onClick={() => handleAdd(isDesktop ? 'wishlist' : mobileStatus)}
+            className="btn-dark mt-3 text-sm"
+          >
+            <Plus size={16} strokeWidth={3} aria-hidden="true" /> Tambah lamaran pertama
+          </button>
+        </div>
+      )}
 
       <nav className="-mx-4 mb-4 overflow-x-auto px-4 md:hidden" aria-label="Application status">
         <div className="flex min-w-max gap-2 pb-1">
@@ -278,7 +308,7 @@ export default function BoardPage() {
       </nav>
 
       <DndContext sensors={sensors} collisionDetection={boardCollisionDetection} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-        <div className="flex w-full gap-3 overflow-x-auto pb-6 xl:gap-4">
+        <div data-tour="board-columns" className="flex w-full gap-3 overflow-x-auto pb-6 xl:gap-4">
           {visibleColumns.map((column) => (
             <KanbanColumn
               key={column.status}
@@ -321,6 +351,8 @@ export default function BoardPage() {
         onClose={() => setReminderApp(null)}
         onSave={handleSaveReminder}
       />
+
+      {isDesktop && <BoardTour runSignal={tourSignal} />}
     </>
   )
 }

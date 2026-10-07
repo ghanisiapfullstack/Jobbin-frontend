@@ -65,7 +65,7 @@ export default function LoginPage() {
                 boxShadow: '4px 4px 0px #1a1a1a',
                 fontFamily: 'Space Grotesk, sans-serif',
                 fontWeight: 600,
-                background: '#FFD600',
+                background: '#E8C310',
               },
             },
           )
