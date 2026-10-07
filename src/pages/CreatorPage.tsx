@@ -71,7 +71,7 @@ export default function CreatorPage() {
             <img
               src="/Saweria-qr.png"
               alt="QR code Saweria untuk mendukung Jobbin"
-              className="h-44 w-44 shrink-0 border-2 border-dark bg-white p-1 shadow-neo"
+              className="h-44 w-44 shrink-0 border-2 border-dark bg-[#ffffff] p-1 shadow-neo"
             />
             <div className="flex-1 text-center sm:text-left">
               <p className="mb-3 text-xs font-bold text-dark/60">
